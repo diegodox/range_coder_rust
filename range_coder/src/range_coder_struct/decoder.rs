@@ -18,12 +18,9 @@ use std::path::Path;
 
 impl<T> RangeCoder<T>
 where
-    T: Eq + std::hash::Hash + ForRangeCoder + Ord + std::fmt::Debug,
+    T: Eq + std::hash::Hash + ForRangeCoder + Ord + std::fmt::Debug + Clone,
 {
-    pub fn read(path: &Path) -> Result<RangeCoder<T>, String>
-    where
-        T: Eq + std::hash::Hash + ForRangeCoder + Ord,
-    {
+    pub fn read(path: &Path) -> Result<RangeCoder<T>, String> {
         // ファイルオープン
         let mut file = match File::open(path) {
             Ok(file) => file,
@@ -65,8 +62,18 @@ where
         rc.data = (&buff[cursor..]).iter().map(|x| *x).collect();
         Result::Ok(rc)
     }
+    pub fn decode(mut self) -> Vec<T> {
+        let mut decoded_simbol = Vec::new();
+        let mut shift_count = 0;
+        let simbol_total = self.simbol_total();
+        for _ in 0..simbol_total {
+            decoded_simbol.push(self.decode_one_simbol(&mut shift_count));
+        }
+        decoded_simbol.reverse();
+        decoded_simbol
+    }
     /// 一文字デコードする関数
-    pub fn decode(&mut self, shift_count: &mut u8) -> &T {
+    fn decode_one_simbol(&mut self, shift_count: &mut u8) -> T {
         // 符号の復元
         let mut v: u32 = 0;
         for i in 0..4 {
@@ -123,13 +130,14 @@ where
             .filter(|(_k, &v)| v == decode_index as u32)
             .map(|(k, _v)| k)
             .last()
-            .unwrap();
+            .unwrap()
+            .clone();
 
         /*
         以下、エンコードの再現
         */
         // simbolのindexをとる
-        let simbol_data = self.simbol_data.get(decoded_simbol).unwrap();
+        let simbol_data = self.simbol_data.get(&decoded_simbol).unwrap();
         // Range/totalの一時保存
         let range_before = self.range / self.simbol_data.total as u32;
         // Rangeの更新

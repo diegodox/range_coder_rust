@@ -10,7 +10,7 @@ use std::u32;
 #[derive(Debug)]
 pub struct Simbols<T>
 where
-    T: Eq + std::hash::Hash + ForRangeCoder,
+    T: Eq + std::hash::Hash + ForRangeCoder + Clone,
 {
     /// シンボル保存時のサイズ[byte]
     pub(crate) size: u8,
@@ -63,7 +63,7 @@ impl SimbolParam {
 }
 impl<T> Simbols<T>
 where
-    T: std::cmp::Eq + std::hash::Hash + ForRangeCoder + Ord,
+    T: std::cmp::Eq + std::hash::Hash + ForRangeCoder + Ord + Clone,
 {
     pub fn new(size: u8) -> Self {
         Simbols {

@@ -11,7 +11,7 @@ pub mod encoder;
 /// RangeCoder<シンボルのデータ型>で指定
 pub struct RangeCoder<T>
 where
-    T: Eq + std::hash::Hash + ForRangeCoder + Ord,
+    T: Eq + std::hash::Hash + ForRangeCoder + Ord + Clone,
 {
     /// 符号
     pub(crate) data: VecDeque<u8>,
@@ -29,7 +29,7 @@ where
 }
 impl<T> RangeCoder<T>
 where
-    T: Eq + std::hash::Hash + ForRangeCoder + Ord + std::fmt::Debug,
+    T: Eq + std::hash::Hash + ForRangeCoder + Ord + std::fmt::Debug + Clone,
 {
     /// デバッグ用出力
     pub fn pr(&self) {

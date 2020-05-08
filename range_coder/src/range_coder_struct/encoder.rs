@@ -7,7 +7,7 @@ use std::path::Path;
 
 impl<T> RangeCoder<T>
 where
-    T: Eq + std::hash::Hash + ForRangeCoder + Ord + std::fmt::Debug,
+    T: Eq + std::hash::Hash + ForRangeCoder + Ord + std::fmt::Debug + Clone,
 {
     /// 1シンボル、エンコードを進める
     pub fn encode(&mut self, simbol: T) {

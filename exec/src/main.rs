@@ -36,14 +36,8 @@ fn test_read() {
     println!("ファイル読み込み");
     let mut rc = RangeCoder::<Data>::read(Path::new("data/out.rc")).unwrap();
     rc.pr_sb();
-    let mut shift_count = 0;
-    for _ in 0..rc.simbol_total() {
-        println!("1シンボルデコード開始");
-        let dec = rc.decode(&mut shift_count);
-        println!("デコードされたシンボル:{:?}", dec);
-        rc.pr();
-        println!();
-    }
+    let decoded = rc.decode();
+    println!("{:?}", decoded);
 }
 // 以下、testで元データとするu32を使用可能にするための準備
 
