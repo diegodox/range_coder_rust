@@ -1,3 +1,5 @@
+//! エンコードする時に使う
+
 use super::RangeCoder;
 use crate::simbol_trait::ForRangeCoder;
 use crate::uext::UEXT;
@@ -133,11 +135,13 @@ where
     /// エンコードデータを書き込み
     ///
     /// データ構造
-    /// 名前|先頭バイト|形式
-    /// -|-|-
-    /// シンボルの種類数|0|u8
-    /// シンボルデータ|1|シンボルそのもの(サイズは外部指定)、シンボルの出現数(u32)
-    /// 符号|$(size[byte]+4)\times+1$|符号
+    ///
+    /// | 名前 | 先頭バイト | 形式 |
+    /// | --- | --- | --- |
+    /// | シンボルの種類数 | 0 | u8 |
+    /// | シンボルデータ | 1 | シンボルそのもの(サイズは外部指定)、シンボルの出現数(u32) |
+    /// | 符号 | $(size[byte]+4)\times+1$ | 符号 |
+    ///
     pub fn write(&self, path: &Path) -> Result<(), String> {
         // ファイルオープン
         let mut file = match File::create(path) {

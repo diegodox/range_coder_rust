@@ -32,7 +32,7 @@ where
     T: Eq + std::hash::Hash + ForRangeCoder + Ord + std::fmt::Debug + Clone,
 {
     /// デバッグ用出力
-    pub fn pr(&self) {
+    pub(crate) fn pr(&self) {
         println!("   ENCODER STATE");
         print!("      data        :");
         for i in &(self.data) {
@@ -47,7 +47,7 @@ where
         println!("      lower_bound :0x{:x}", &(self.lower_bound));
         println!("      range       :0x{:x}", &(self.range));
     }
-    pub fn pr_sb(&self) {
+    pub(crate) fn pr_sb(&self) {
         println!("simbol data is:");
         println!("{:?}", self.simbol_data);
     }
@@ -64,11 +64,8 @@ where
             carry_n: 0,
         }
     }
-    pub fn count_simbol_type(&self) -> u32 {
-        self.simbol_data.simbol_type_count
-    }
     /// シンボルの合計出現回数を返す
-    pub fn simbol_total(&self) -> u32 {
+    pub(crate) fn simbol_total(&self) -> u32 {
         self.simbol_data.total
     }
 }

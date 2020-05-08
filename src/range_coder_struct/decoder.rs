@@ -1,3 +1,5 @@
+//! デコードする時に使う
+//!
 use crate::range_coder_struct::RangeCoder;
 use crate::simbol_data::SimbolParam;
 use crate::simbol_data::Simbols;
@@ -7,19 +9,18 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-/// ファイル読み込み
-///
-/// データ構造
-/// 名前|先頭バイト|形式
-/// -|-|-
-/// シンボルの種類数|0|u8
-/// シンボルデータ|1|シンボルそのもの(サイズは外部指定)、シンボルの出現数(u32)
-/// 符号|$(size[byte]+4)\times+1$|符号
-
 impl<T> RangeCoder<T>
 where
     T: Eq + std::hash::Hash + ForRangeCoder + Ord + std::fmt::Debug + Clone,
 {
+    /// ファイル読み込み
+    ///
+    /// データ構造
+    /// 名前|先頭バイト|形式
+    /// -|-|-
+    /// シンボルの種類数|0|u8
+    /// シンボルデータ|1|シンボルそのもの(サイズは外部指定)、シンボルの出現数(u32)
+    /// 符号|$(size[byte]+4)\times+1$|符号
     pub fn read(path: &Path) -> Result<RangeCoder<T>, String> {
         // ファイルオープン
         let mut file = match File::open(path) {

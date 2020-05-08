@@ -54,7 +54,7 @@ impl SimbolParam {
     fn new() -> Self {
         SimbolParam { cum: 0, c: 1 }
     }
-    pub fn new_with_c(c: u32) -> Self {
+    pub(crate) fn new_with_c(c: u32) -> Self {
         SimbolParam { cum: 0, c: c }
     }
     fn add(&mut self) {
@@ -65,7 +65,7 @@ impl<T> Simbols<T>
 where
     T: std::cmp::Eq + std::hash::Hash + ForRangeCoder + Ord + Clone,
 {
-    pub fn new(size: u8) -> Self {
+    pub(crate) fn new(size: u8) -> Self {
         Simbols {
             size: size,
             total: 0,
