@@ -1,20 +1,16 @@
 //! エンコードする時に使う
 
 use super::RangeCoder;
-use crate::simbol_trait::ForRangeCoder;
 use crate::uext::UEXT;
 use std::fs::File;
 use std::io::prelude::Write;
 use std::path::Path;
 
-impl<T> RangeCoder<T>
-where
-    T: Eq + std::hash::Hash + ForRangeCoder + Ord + std::fmt::Debug + Clone,
-{
+impl RangeCoder {
     /// 1シンボル、エンコードを進める
-    pub fn encode(&mut self, simbol: T) {
+    pub fn encode(&mut self, simbol_index: usize) {
         // simbolのindexをとる
-        let simbol_data = self.simbol_data.get(&simbol).unwrap();
+        let simbol_data = self.simbol_data.simbol_param(simbol_index);
         // Range/totalの一時保存
         let range_before = self.range / self.simbol_data.total as u32;
 
@@ -150,25 +146,30 @@ where
         };
         // バッファ宣言
         let mut buff = Vec::new();
-
-        // シンボルの種類数書き込み
-        buff.append(&mut self.simbol_data.simbol_type_count.to_be_bytes().to_vec());
-        // シンボル、出現数を交互に書き込み
+        // usizeのサイズ書き込み
+        buff.append(&mut vec![std::mem::size_of::<usize>() as u8]);
+        // インデックス、出現数を交互に書き込み
+        // 出現数が1以上のシンボルの出現数、インデックスをvectorに集める
         let v: Vec<_> = self
             .simbol_data
-            .index
+            .simbol_paramaters
             .iter()
-            .map(|(k, v)| (k, &self.simbol_data.simbol_paramaters[*v as usize]))
+            .enumerate()
+            .map(|(i, parm)| (i, parm.c))
+            .filter(|(_, c)| *c > 1)
             .collect();
-        for (simbol, simbol_param) in v {
-            buff.append(&mut simbol.save()); //sizeは可変
-            buff.append(&mut simbol_param.c.to_vec_u8()); //sizeは4
+        // 保存するシンボルの数を書き込む
+        buff.append(&mut v.len().to_vec_u8());
+        // シンボルを書き込む
+        for (index, simbol_c) in v {
+            buff.append(&mut index.to_vec_u8());
+            buff.append(&mut simbol_c.to_vec_u8());
         }
         // 出力データ書き込み
         for &i in &self.data {
             buff.push(i);
         }
-        // バッファ書き込み
+        // ファイルに書き込み
         match file.write_all(&buff) {
             Ok(_) => return Result::Ok(()),
             Err(_) => return Result::Err("Some error happened while writing buffer".to_string()),
