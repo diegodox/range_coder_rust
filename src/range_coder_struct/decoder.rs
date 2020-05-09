@@ -75,7 +75,7 @@ impl RangeCoder {
         for i in 0..4 {
             v |= (self.data[i + *shift_count as usize] as u32) << 8 * (3 - i);
         }
-        println!("v:{:x}", v);
+        //println!("v:{:x}", v);
         // 力技で行う
         // うまい方法はあとで考える
         let range_before = self.range / self.simbol_data.total as u32;
@@ -98,17 +98,17 @@ impl RangeCoder {
             {
                 (v, _bool) => v,
             };
-            println!("l_v_try  : {:x}", lower_bound_try);
-            println!("ragne_try: {:x}", range_try);
+            //println!("l_v_try  : {:x}", lower_bound_try);
+            //println!("ragne_try: {:x}", range_try);
             if v >= lower_bound_try {
                 if v - lower_bound_try < range_try {
                     decode_index = try_index;
                     break;
                 }
             }
-            println!("index: {} fail.", try_index);
+            //println!("index: {} fail.", try_index);
         }
-        println!("インデックス: {}", decode_index);
+        //println!("インデックス: {}", decode_index);
 
         // decode_indexをunmutableに
         let decode_index = decode_index;
@@ -149,7 +149,7 @@ impl RangeCoder {
         */
         static TOP: u32 = 1 << 24;
         while self.range < TOP {
-            println!("overflow");
+            //println!("overflow");
             *shift_count += 1;
             self.lower_bound <<= 8;
             self.range <<= 8;
