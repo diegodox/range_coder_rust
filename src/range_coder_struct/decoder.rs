@@ -69,7 +69,7 @@ impl RangeCoder {
         decoded_simbol
     }
     /// 一文字デコードする関数
-    fn decode_one_simbol(&mut self, shift_count: &mut u8) -> usize {
+    fn decode_one_simbol(&mut self, shift_count: &mut u32) -> usize {
         // 符号の復元(8bit区切りから32ビットへ)
         let mut v: u32 = 0;
         for i in 0..4 {
