@@ -17,11 +17,6 @@ pub struct RangeCoder {
     pub(crate) range: u32,
     /// シンボルのデータ
     pub(crate) simbol_data: Simbols,
-    /// 未確定桁を格納するバッファ
-    pub(crate) buffer: Option<u8>,
-    /// 0xff or 0x00 になる値の個数
-    /// (参考文献でcarryNと呼ばれるもの)
-    pub(crate) carry_n: u32,
 }
 impl RangeCoder {
     /// デバッグ用出力
@@ -32,11 +27,6 @@ impl RangeCoder {
             print!("0x{:x} , ", i);
         }
         println!("");
-        match self.buffer {
-            Some(b) => println!("      buffer      :0x{:x}", b),
-            None => println!("      buffer      :None"),
-        }
-        println!("      carry_n     :{}個", self.carry_n);
         println!("      lower_bound :0x{:x}", &(self.lower_bound));
         println!("      range       :0x{:x}", &(self.range));
     }
@@ -49,8 +39,6 @@ impl RangeCoder {
             lower_bound: 0,
             range: u32::MAX,
             simbol_data: simbol_data_src,
-            buffer: None,
-            carry_n: 0,
         }
     }
     /// シンボルの合計出現回数を返す

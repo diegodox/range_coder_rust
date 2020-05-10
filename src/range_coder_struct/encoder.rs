@@ -7,28 +7,46 @@ use std::io::prelude::Write;
 use std::path::Path;
 
 impl RangeCoder {
+    pub fn into_encoder(self) -> Encoder {
+        Encoder {
+            range_coder: self,
+            buffer: None,
+            carry_n: 0,
+        }
+    }
+}
+pub struct Encoder {
+    range_coder: RangeCoder,
+    /// 未確定桁を格納するバッファ
+    buffer: Option<u8>,
+    /// 0xff or 0x00 になる値の個数
+    /// (参考文献でcarryNと呼ばれるもの)
+    carry_n: u32,
+}
+impl Encoder {
     /// 1シンボル、エンコードを進める
     pub fn encode(&mut self, simbol_index: usize) {
         // simbolのindexをとる
-        let simbol_data = self.simbol_data.simbol_param(simbol_index);
+        let simbol_data = self.range_coder.simbol_data.simbol_param(simbol_index);
         // Range/totalの一時保存
-        let range_before = self.range / self.simbol_data.total as u32;
+        let range_before = self.range_coder.range / self.range_coder.simbol_data.total as u32;
 
         // Rangeの更新
-        match (simbol_data.cum + simbol_data.c).cmp(&self.simbol_data.total) {
+        match (simbol_data.cum + simbol_data.c).cmp(&self.range_coder.simbol_data.total) {
             // レンジ最後のシンボルの場合、通常のレンジ更新で発生する誤差(整数除算によるもの)を含める
             std::cmp::Ordering::Equal => {
-                self.range = self.range - (range_before * simbol_data.cum);
+                self.range_coder.range = self.range_coder.range - (range_before * simbol_data.cum);
             }
             // レンジ最後のシンボルでない場合、通常のレンジ更新を行う
             std::cmp::Ordering::Less => {
-                self.range = range_before * simbol_data.c;
+                self.range_coder.range = range_before * simbol_data.c;
             }
             // Graterになることはない
             _ => unreachable!("panic! (cum+c) should not be bigger than total"),
         }
         // lower_boundの更新
         match self
+            .range_coder
             .lower_bound
             .overflowing_add(range_before * simbol_data.cum)
         {
@@ -38,10 +56,10 @@ impl RangeCoder {
                 出力待ち桁はbuffer+1 00 00..00 00に確定する
                 */
                 self.move_determined_buffer_to_data(true, None);
-                self.lower_bound = v;
+                self.range_coder.lower_bound = v;
             }
             (v, false) => {
-                self.lower_bound = v;
+                self.range_coder.lower_bound = v;
             }
         }
         /*
@@ -50,9 +68,9 @@ impl RangeCoder {
         上位8bitが決定した場合、シフトを行い、決定した桁を取り出しておく
         */
         static TOP: u32 = 1 << 24;
-        while self.range < TOP {
+        while self.range_coder.range < TOP {
             // 確定した上位8bit(下限の上位8bit)をbuffer_newに格納
-            let buffer_new = (self.lower_bound >> 24) as u8;
+            let buffer_new = (self.range_coder.lower_bound >> 24) as u8;
             match buffer_new {
                 /*
                 バッファが1111 1111だった場合
@@ -74,8 +92,8 @@ impl RangeCoder {
                 }
             }
             // 先頭8bitはバッファに入れたのでシフトして演算精度をあげる
-            self.lower_bound <<= 8;
-            self.range <<= 8;
+            self.range_coder.lower_bound <<= 8;
+            self.range_coder.range <<= 8;
         }
         //一文字エンコード完了
     }
@@ -84,23 +102,23 @@ impl RangeCoder {
         match is_overflow {
             true => match self.buffer {
                 Some(b) => {
-                    self.data.push_back(b + 1);
+                    self.range_coder.data.push_back(b + 1);
                     for _ in 0..self.carry_n {
-                        self.data.push_back(0x00);
+                        self.range_coder.data.push_back(0x00);
                     }
                 }
                 None => panic!("未確定の桁がない状態でoverflowしました。"),
             },
             false => match self.buffer {
                 Some(b) => {
-                    self.data.push_back(b);
+                    self.range_coder.data.push_back(b);
                     for _ in 0..self.carry_n {
-                        self.data.push_back(0xff);
+                        self.range_coder.data.push_back(0xff);
                     }
                 }
                 None => {
                     for _ in 0..self.carry_n {
-                        self.data.push_back(0xff);
+                        self.range_coder.data.push_back(0xff);
                     }
                 }
             },
@@ -113,20 +131,28 @@ impl RangeCoder {
     pub fn finish(&mut self) {
         match self.buffer {
             Some(b) => {
-                self.data.push_back(b);
+                self.range_coder.data.push_back(b);
             }
             None => {}
         }
         for _ in 0..self.carry_n {
-            self.data.push_back(0xff);
+            self.range_coder.data.push_back(0xff);
         }
-        self.data.push_back((self.lower_bound >> 24) as u8);
-        self.lower_bound <<= 8;
-        self.data.push_back((self.lower_bound >> 24) as u8);
-        self.lower_bound <<= 8;
-        self.data.push_back((self.lower_bound >> 24) as u8);
-        self.lower_bound <<= 8;
-        self.data.push_back((self.lower_bound >> 24) as u8);
+        self.range_coder
+            .data
+            .push_back((self.range_coder.lower_bound >> 24) as u8);
+        self.range_coder.lower_bound <<= 8;
+        self.range_coder
+            .data
+            .push_back((self.range_coder.lower_bound >> 24) as u8);
+        self.range_coder.lower_bound <<= 8;
+        self.range_coder
+            .data
+            .push_back((self.range_coder.lower_bound >> 24) as u8);
+        self.range_coder.lower_bound <<= 8;
+        self.range_coder
+            .data
+            .push_back((self.range_coder.lower_bound >> 24) as u8);
     }
     /// エンコードデータを書き込み
     ///
@@ -151,6 +177,7 @@ impl RangeCoder {
         // インデックス、出現数を交互に書き込み
         // 出現数が1以上のシンボルの出現数、インデックスをvectorに集める
         let v: Vec<_> = self
+            .range_coder
             .simbol_data
             .simbol_paramaters
             .iter()
@@ -166,7 +193,7 @@ impl RangeCoder {
             buff.append(&mut simbol_c.to_vec_u8());
         }
         // 出力データ書き込み
-        for &i in &self.data {
+        for &i in &self.range_coder.data {
             buff.push(i);
         }
         // ファイルに書き込み
