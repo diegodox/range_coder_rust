@@ -28,24 +28,35 @@ impl ForRangeCoder for SimbolParam {
         SimbolParam { cum: 0, c: c }
     }
 }
+// コンストラクタをimpl
 impl SimbolParam {
     fn new() -> Self {
         SimbolParam { cum: 0, c: 0 }
     }
-    fn add(&mut self) {
-        self.c += 1;
-    }
-    pub fn c(&self) -> u32 {
+}
+// ゲッターをimpl
+impl SimbolParam {
+    pub(crate) fn c(&self) -> u32 {
         self.c
     }
-    pub fn set_c(&mut self, c: u32) {
-        self.c = c;
-    }
-    pub fn cum(&self) -> u32 {
+    pub(crate) fn cum(&self) -> u32 {
         self.cum
     }
-    pub fn set_cum(&mut self, cum: u32) {
+}
+// セッターをimpl
+impl SimbolParam {
+    pub(crate) fn set_c(&mut self, c: u32) {
+        self.c = c;
+    }
+    pub(crate) fn set_cum(&mut self, cum: u32) {
         self.cum = cum;
+    }
+}
+// 他の関数をimpl
+impl SimbolParam {
+    /// 出現回数を1回ふやす
+    fn add(&mut self) {
+        self.c += 1;
     }
 }
 
@@ -54,10 +65,11 @@ impl SimbolParam {
 /// まず、この構造体にシンボルを用意する
 pub struct Simbols {
     /// 全文字の出現回数
-    pub(crate) total: u32,
+    total: u32,
     /// シンボルのパラメータを保持する配列
-    pub(crate) simbol_paramaters: [SimbolParam; MAX_SIMBOL_COUNT],
+    simbol_paramaters: [SimbolParam; MAX_SIMBOL_COUNT],
 }
+/// コンストラクタをimpl
 impl Simbols {
     pub fn new() -> Self {
         Simbols {
@@ -65,11 +77,14 @@ impl Simbols {
             simbol_paramaters: [SimbolParam::new(); MAX_SIMBOL_COUNT],
         }
     }
-    /// シンボルを追加
-    ///
-    /// シンボルの追加が終わったら finalize()を呼ぶこと
-    pub fn add_simbol(&mut self, simbol_index: usize) {
-        self.simbol_param_mut(simbol_index).add();
+}
+// ゲッターをimpl
+impl Simbols {
+    pub(crate) fn total(&self) -> u32 {
+        self.total
+    }
+    pub(crate) fn simbol_paramaters(&self) -> &[SimbolParam] {
+        &self.simbol_paramaters
     }
     /// シンボルのパラメータ(cとcum)を取得(imutable)
     pub(crate) fn simbol_param(&self, simbol_index: usize) -> &SimbolParam {
@@ -78,6 +93,15 @@ impl Simbols {
     /// シンボルのパラメータを取得(mutable)
     pub(crate) fn simbol_param_mut(&mut self, simbol_index: usize) -> &mut SimbolParam {
         self.simbol_paramaters.get_mut(simbol_index).unwrap()
+    }
+}
+// 他の関数をimpl
+impl Simbols {
+    /// シンボルを追加
+    ///
+    /// シンボルの追加が終わったら finalize()を呼ぶこと
+    pub fn add_simbol(&mut self, simbol_index: usize) {
+        self.simbol_param_mut(simbol_index).add();
     }
     /// シンボルの登録を終了
     pub fn finalize(&mut self) {

@@ -62,4 +62,5 @@ pub mod encoder;
 pub mod range_coder_struct;
 pub mod simbol_data;
 pub mod simbol_trait;
+pub(crate) mod test;
 pub(crate) mod uext;

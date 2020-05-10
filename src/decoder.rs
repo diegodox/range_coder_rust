@@ -23,14 +23,6 @@ impl Decoder {
             data: 0,
         }
     }
-    /// ファイル読み込み
-    ///
-    /// データ構造(これは違う)
-    /// 名前|先頭バイト|形式
-    /// -|-|-
-    /// シンボルの種類数|0|u8
-    /// シンボルデータ|1|シンボルそのもの(サイズは外部指定)、シンボルの出現数(u32)
-    /// 符号|$(size[byte]+4)\times+1$|符号
     pub fn read(path: &Path) -> Result<Decoder, String> {
         // ファイルオープン
         let mut file = match File::open(path) {
@@ -63,22 +55,20 @@ impl Decoder {
             let c: u32 = UEXT::from_vec_u8(&buff[cursor..cursor + 4]);
             cursor += 4;
             // 配列の該当箇所にcを登録
-            sd.simbol_paramaters[index_buff].c = c;
+            sd.simbol_param_mut(index_buff).set_c(c);
         }
         sd.finalize();
         // シンボルデータからデコーダ作成
         let mut decoder = RangeCoder::new(sd).into_decoder();
         // 出力データ読み込み
         decoder.buffer = (&buff[cursor..]).iter().map(|x| *x).collect();
-
         Result::Ok(decoder)
     }
     pub fn decode(mut self) -> Vec<usize> {
         let mut decoded_simbol = Vec::new();
         let simbol_total = self.range_coder.simbol_total();
-        self.buffer.reverse();
         let mut data_buf = Vec::new();
-        // 初期のデータ32bit読み出し
+        // 最初の32bit読み出し
         for _ in 0..4 {
             data_buf.push(self.buffer.pop().unwrap());
         }
@@ -90,33 +80,17 @@ impl Decoder {
         decoded_simbol.reverse();
         decoded_simbol
     }
-    /// 一文字デコードする関数
-    fn decode_one_simbol(&mut self) -> usize {
-        let range_before = self.range_coder.range / self.range_coder.simbol_data.total as u32;
-        let mut decode_index = 0;
+    /// シンボルを見つける関数
+    fn find_simbol(&self) -> usize {
         let mut left = 0;
         let mut right = MAX_SIMBOL_COUNT;
-        while left < right {
+        loop {
             let try_index = (left + right) / 2;
-            let simbol_data = self.range_coder.simbol_data.simbol_param(try_index);
+            let simbol_data = self.range_coder.simbol_data().simbol_param(try_index);
             // Rangeの更新
-            let range_try =
-                match (simbol_data.cum + simbol_data.c).cmp(&self.range_coder.simbol_data.total) {
-                    // レンジ最後のシンボルの場合、通常のレンジ更新で発生する誤差(整数除算によるもの)を含める
-                    std::cmp::Ordering::Equal => {
-                        self.range_coder.range - range_before * simbol_data.cum
-                    }
-                    // レンジ最後のシンボルでない場合、通常のレンジ更新を行う
-                    std::cmp::Ordering::Less => range_before * simbol_data.c,
-                    // Graterになることはない
-                    _ => unreachable!("panic! (cum+c) should not be bigger than total"),
-                };
+            let range_try = self.range_coder.update_range(simbol_data);
             // lower_boundの更新
-            let lower_bound_try = match self
-                .range_coder
-                .lower_bound
-                .overflowing_add(range_before * simbol_data.cum)
-            {
+            let lower_bound_try = match self.range_coder.update_lower_bound(simbol_data) {
                 (v, _bool) => v,
             };
             match self.data >= lower_bound_try {
@@ -124,8 +98,7 @@ impl Decoder {
                 true => match self.data - lower_bound_try < range_try {
                     // 条件ピッタリ
                     true => {
-                        decode_index = try_index;
-                        break;
+                        return try_index;
                     }
                     // もっと前のシンボル
                     false => {
@@ -138,52 +111,33 @@ impl Decoder {
                 }
             }
         }
-
-        // decode_indexをunmutableに
-        let decode_index = decode_index;
-        /*
-        以下、エンコードの再現
-        */
-        // decode_indexのシンボルデータの取得
-        let simbol_data = self.range_coder.simbol_data.simbol_param(decode_index);
-        // Range/totalの一時保存
-        let range_before = self.range_coder.range / self.range_coder.simbol_data.total as u32;
-        // Rangeの更新
-        match (simbol_data.cum + simbol_data.c).cmp(&self.range_coder.simbol_data.total) {
-            // レンジ最後のシンボルの場合、通常のレンジ更新で発生する誤差(整数除算によるもの)を含める
-            std::cmp::Ordering::Equal => {
-                self.range_coder.range = self.range_coder.range - range_before * simbol_data.cum;
-            }
-            // レンジ最後のシンボルでない場合、通常のレンジ更新を行う
-            std::cmp::Ordering::Less => {
-                self.range_coder.range = range_before * simbol_data.c;
-            }
-            // Graterになることはない
-            _ => unreachable!("panic! (cum+c) should not be bigger than total"),
-        }
-        // lower_boundの更新
-        match self
-            .range_coder
-            .lower_bound
-            .overflowing_add(range_before * simbol_data.cum)
-        {
-            (v, true) => {
-                self.range_coder.lower_bound = v;
-            }
-            (v, false) => {
-                self.range_coder.lower_bound = v;
-            }
-        }
-        /*
-        上位8bitの判定
-        */
+    }
+    /// 一文字デコードする関数
+    fn decode_one_simbol(&mut self) -> usize {
+        // シンボルを見つける
+        let decode_index = self.find_simbol();
+        // シンボルのパラメータを保存
+        let decode_param = self.range_coder.simbol_data().simbol_param(decode_index);
+        // range,lower_boundの更新
+        let range_new = self.range_coder.update_range(decode_param);
+        let lower_bound_new = self.range_coder.update_lower_bound(decode_param).0;
+        self.range_coder.set_range(range_new);
+        self.range_coder.set_lower_bound(lower_bound_new);
+        // 下限をbitシフトしたタイミングで読み出す桁を変えればよい
         static TOP: u32 = 1 << 24;
-        while self.range_coder.range < TOP {
-            self.range_coder.lower_bound <<= 8;
-            self.range_coder.range <<= 8;
-            self.data <<= 8;
-            self.data |= self.buffer.pop().unwrap() as u32;
+        while self.range_coder.range() < TOP {
+            self.range_coder
+                .set_lower_bound(self.range_coder.lower_bound() << 8);
+            self.range_coder.set_range(self.range_coder.range() << 8);
+            self.data_shift();
         }
         decode_index
+    }
+    fn data_shift(&mut self) {
+        self.data <<= 8;
+        match self.buffer.pop() {
+            Some(v) => self.data |= v as u32,
+            None => {}
+        }
     }
 }

@@ -28,29 +28,15 @@ impl Encoder {
     }
     /// 1シンボル、エンコードを進める
     pub fn encode(&mut self, simbol_index: usize) {
-        // simbolのindexをとる
-        let simbol_data = self.range_coder.simbol_data.simbol_param(simbol_index);
-        // Range/totalの一時保存
-        let range_before = self.range_coder.range / self.range_coder.simbol_data.total as u32;
-
         // Rangeの更新
-        match (simbol_data.cum + simbol_data.c).cmp(&self.range_coder.simbol_data.total) {
-            // レンジ最後のシンボルの場合、通常のレンジ更新で発生する誤差(整数除算によるもの)を含める
-            std::cmp::Ordering::Equal => {
-                self.range_coder.range = self.range_coder.range - (range_before * simbol_data.cum);
-            }
-            // レンジ最後のシンボルでない場合、通常のレンジ更新を行う
-            std::cmp::Ordering::Less => {
-                self.range_coder.range = range_before * simbol_data.c;
-            }
-            // Graterになることはない
-            _ => unreachable!("panic! (cum+c) should not be bigger than total"),
-        }
+        self.range_coder.set_range(
+            self.range_coder
+                .update_range(self.range_coder.simbol_data().simbol_param(simbol_index)),
+        );
         // lower_boundの更新
         match self
             .range_coder
-            .lower_bound
-            .overflowing_add(range_before * simbol_data.cum)
+            .update_lower_bound(self.range_coder.simbol_data().simbol_param(simbol_index))
         {
             (v, true) => {
                 /*
@@ -58,10 +44,10 @@ impl Encoder {
                 出力待ち桁はbuffer+1 00 00..00 00に確定する
                 */
                 self.move_determined_buffer_to_data(true, None);
-                self.range_coder.lower_bound = v;
+                self.range_coder.set_lower_bound(v);
             }
             (v, false) => {
-                self.range_coder.lower_bound = v;
+                self.range_coder.set_lower_bound(v);
             }
         }
         /*
@@ -70,9 +56,9 @@ impl Encoder {
         上位8bitが決定した場合、シフトを行い、決定した桁を取り出しておく
         */
         static TOP: u32 = 1 << 24;
-        while self.range_coder.range < TOP {
+        while self.range_coder.range() < TOP {
             // 確定した上位8bit(下限の上位8bit)をbuffer_newに格納
-            let buffer_new = (self.range_coder.lower_bound >> 24) as u8;
+            let buffer_new = (self.range_coder.lower_bound() >> 24) as u8;
             match buffer_new {
                 /*
                 バッファが1111 1111だった場合
@@ -94,8 +80,9 @@ impl Encoder {
                 }
             }
             // 先頭8bitはバッファに入れたのでシフトして演算精度をあげる
-            self.range_coder.lower_bound <<= 8;
-            self.range_coder.range <<= 8;
+            self.range_coder
+                .set_lower_bound(self.range_coder.lower_bound() << 8);
+            self.range_coder.set_range(self.range_coder.range() << 8);
         }
         //一文字エンコード完了
     }
@@ -131,37 +118,25 @@ impl Encoder {
     /// エンコード終了後に呼び出して、
     /// buffer,carry_nを出力する。
     pub fn finish(&mut self) {
+        // 未確定のバッファがあれば出力に追加
         match self.buffer {
             Some(b) => {
                 self.data.push_back(b);
             }
             None => {}
         }
+        // carry_nがあれば0xffで出力に追加
         for _ in 0..self.carry_n {
             self.data.push_back(0xff);
         }
-        self.data
-            .push_back((self.range_coder.lower_bound >> 24) as u8);
-        self.range_coder.lower_bound <<= 8;
-        self.data
-            .push_back((self.range_coder.lower_bound >> 24) as u8);
-        self.range_coder.lower_bound <<= 8;
-        self.data
-            .push_back((self.range_coder.lower_bound >> 24) as u8);
-        self.range_coder.lower_bound <<= 8;
-        self.data
-            .push_back((self.range_coder.lower_bound >> 24) as u8);
+        // 現状の下限を出力
+        for _ in 0..4 {
+            self.data
+                .push_back((self.range_coder.lower_bound() >> 24) as u8);
+            self.range_coder
+                .set_lower_bound(self.range_coder.lower_bound() << 8);
+        }
     }
-    /// エンコードデータを書き込み
-    ///
-    /// データ構造
-    ///
-    /// | 名前 | 先頭バイト | 形式 |
-    /// | --- | --- | --- |
-    /// | シンボルの種類数 | 0 | u8 |
-    /// | シンボルデータ | 1 | シンボルそのもの(サイズは外部指定)、シンボルの出現数(u32) |
-    /// | 符号 | $(size[byte]+4)\times+1$ | 符号 |
-    ///
     pub fn write(&self, path: &Path) -> Result<(), String> {
         // ファイルオープン
         let mut file = match File::create(path) {
@@ -176,8 +151,8 @@ impl Encoder {
         // 出現数が1以上のシンボルの出現数、インデックスをvectorに集める
         let v: Vec<_> = self
             .range_coder
-            .simbol_data
-            .simbol_paramaters
+            .simbol_data()
+            .simbol_paramaters()
             .iter()
             .enumerate()
             .map(|(i, parm)| (i, parm.c))
