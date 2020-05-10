@@ -6,15 +6,6 @@ use std::fs::File;
 use std::io::prelude::Write;
 use std::path::Path;
 
-impl RangeCoder {
-    pub fn into_encoder(self) -> Encoder {
-        Encoder {
-            range_coder: self,
-            buffer: None,
-            carry_n: 0,
-        }
-    }
-}
 pub struct Encoder {
     range_coder: RangeCoder,
     /// 未確定桁を格納するバッファ
@@ -24,6 +15,13 @@ pub struct Encoder {
     carry_n: u32,
 }
 impl Encoder {
+    pub fn new(range_coder: RangeCoder) -> Self {
+        Self {
+            range_coder: range_coder,
+            buffer: None,
+            carry_n: 0,
+        }
+    }
     /// 1シンボル、エンコードを進める
     pub fn encode(&mut self, simbol_index: usize) {
         // simbolのindexをとる

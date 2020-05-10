@@ -45,4 +45,10 @@ impl RangeCoder {
     pub(crate) fn simbol_total(&self) -> u32 {
         self.simbol_data.total
     }
+    pub fn into_encoder(self) -> encoder::Encoder {
+        encoder::Encoder::new(self)
+    }
+    pub fn into_decoder(self) -> decoder::Decoder {
+        decoder::Decoder::new(self)
+    }
 }

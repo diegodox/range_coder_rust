@@ -15,16 +15,14 @@ pub struct Decoder {
     // bufferから順に読み出して使う
     data: u32,
 }
-impl RangeCoder {
-    pub fn into_decoder(self) -> Decoder {
-        Decoder {
-            range_coder: self,
+impl Decoder {
+    pub fn new(range_coder: RangeCoder) -> Self {
+        Self {
+            range_coder: range_coder,
             buffer: Vec::new(),
             data: 0,
         }
     }
-}
-impl Decoder {
     /// ファイル読み込み
     ///
     /// データ構造(これは違う)
