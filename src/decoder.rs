@@ -70,7 +70,10 @@ impl Decoder {
         let mut data_buf = Vec::new();
         // 最初の32bit読み出し
         for _ in 0..4 {
-            data_buf.push(self.buffer.pop().unwrap());
+            match self.buffer.pop() {
+                Some(v) => data_buf.push(v),
+                None => {}
+            }
         }
         self.data = UEXT::from_vec_u8(&data_buf);
         // シンボル数分デコード
@@ -83,7 +86,7 @@ impl Decoder {
     /// シンボルを見つける関数
     fn find_simbol(&self) -> usize {
         let mut left = 0;
-        let mut right = MAX_SIMBOL_COUNT;
+        let mut right = MAX_SIMBOL_COUNT - 1;
         loop {
             let try_index = (left + right) / 2;
             let simbol_data = self.range_coder.simbol_data().simbol_param(try_index);
