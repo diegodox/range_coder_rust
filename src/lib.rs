@@ -57,9 +57,9 @@
 //! // popで先にエンコードしたものから順に取り出せる
 //! decoded.pop()
 //! ```
+pub mod decoder;
+pub mod encoder;
 pub mod range_coder_struct;
 pub mod simbol_data;
 pub mod simbol_trait;
-pub use range_coder_struct::decoder;
-pub use range_coder_struct::encoder;
 pub(crate) mod uext;

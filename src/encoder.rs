@@ -1,6 +1,6 @@
 //! エンコードする時に使う
 
-use super::RangeCoder;
+use crate::range_coder_struct::RangeCoder;
 use crate::uext::UEXT;
 use std::fs::File;
 use std::io::prelude::Write;

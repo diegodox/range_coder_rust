@@ -1,9 +1,8 @@
+use crate::decoder;
+use crate::encoder;
 use crate::simbol_data::Simbols;
 use std::collections::VecDeque;
 use std::u32;
-
-pub mod decoder;
-pub mod encoder;
 
 /// **RangeCoder構造体**
 ///
