@@ -66,11 +66,11 @@ impl Decoder {
             sd.simbol_paramaters[index_buff].c = c;
         }
         sd.finalize();
-        // シンボルデータからレンジコーダ作成
-        let mut rc = RangeCoder::new(sd);
+        // シンボルデータからデコーダ作成
+        let mut decoder = RangeCoder::new(sd).into_decoder();
         // 出力データ読み込み
-        rc.data = (&buff[cursor..]).iter().map(|x| *x).collect();
-        let decoder = rc.into_decoder();
+        decoder.buffer = (&buff[cursor..]).iter().map(|x| *x).collect();
+
         Result::Ok(decoder)
     }
     pub fn decode(mut self) -> Vec<usize> {

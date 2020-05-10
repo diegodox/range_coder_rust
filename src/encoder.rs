@@ -2,12 +2,15 @@
 
 use crate::range_coder_struct::RangeCoder;
 use crate::uext::UEXT;
+use std::collections::VecDeque;
 use std::fs::File;
 use std::io::prelude::Write;
 use std::path::Path;
 
 pub struct Encoder {
     range_coder: RangeCoder,
+    /// 符号
+    pub(crate) data: VecDeque<u8>,
     /// 未確定桁を格納するバッファ
     buffer: Option<u8>,
     /// 0xff or 0x00 になる値の個数
@@ -17,6 +20,7 @@ pub struct Encoder {
 impl Encoder {
     pub fn new(range_coder: RangeCoder) -> Self {
         Self {
+            data: VecDeque::new(),
             range_coder: range_coder,
             buffer: None,
             carry_n: 0,
@@ -100,23 +104,23 @@ impl Encoder {
         match is_overflow {
             true => match self.buffer {
                 Some(b) => {
-                    self.range_coder.data.push_back(b + 1);
+                    self.data.push_back(b + 1);
                     for _ in 0..self.carry_n {
-                        self.range_coder.data.push_back(0x00);
+                        self.data.push_back(0x00);
                     }
                 }
                 None => panic!("未確定の桁がない状態でoverflowしました。"),
             },
             false => match self.buffer {
                 Some(b) => {
-                    self.range_coder.data.push_back(b);
+                    self.data.push_back(b);
                     for _ in 0..self.carry_n {
-                        self.range_coder.data.push_back(0xff);
+                        self.data.push_back(0xff);
                     }
                 }
                 None => {
                     for _ in 0..self.carry_n {
-                        self.range_coder.data.push_back(0xff);
+                        self.data.push_back(0xff);
                     }
                 }
             },
@@ -129,27 +133,23 @@ impl Encoder {
     pub fn finish(&mut self) {
         match self.buffer {
             Some(b) => {
-                self.range_coder.data.push_back(b);
+                self.data.push_back(b);
             }
             None => {}
         }
         for _ in 0..self.carry_n {
-            self.range_coder.data.push_back(0xff);
+            self.data.push_back(0xff);
         }
-        self.range_coder
-            .data
+        self.data
             .push_back((self.range_coder.lower_bound >> 24) as u8);
         self.range_coder.lower_bound <<= 8;
-        self.range_coder
-            .data
+        self.data
             .push_back((self.range_coder.lower_bound >> 24) as u8);
         self.range_coder.lower_bound <<= 8;
-        self.range_coder
-            .data
+        self.data
             .push_back((self.range_coder.lower_bound >> 24) as u8);
         self.range_coder.lower_bound <<= 8;
-        self.range_coder
-            .data
+        self.data
             .push_back((self.range_coder.lower_bound >> 24) as u8);
     }
     /// エンコードデータを書き込み
@@ -191,7 +191,7 @@ impl Encoder {
             buff.append(&mut simbol_c.to_vec_u8());
         }
         // 出力データ書き込み
-        for &i in &self.range_coder.data {
+        for &i in &self.data {
             buff.push(i);
         }
         // ファイルに書き込み
