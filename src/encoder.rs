@@ -144,10 +144,11 @@ impl Encoder {
         }
     }
     pub fn write(&self, path: &Path) -> Result<(), String> {
-        print!("\n data is : 0x");
+        /*print!("\n data is : 0x");
         for v in &self.data {
             print!("{:x}", v);
         }
+        */
         println!();
         // ファイルオープン
         let mut file = match File::create(path) {
