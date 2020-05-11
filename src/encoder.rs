@@ -1,4 +1,4 @@
-//! エンコードする時に使う
+//! エンコーダ
 
 use crate::range_coder_struct::RangeCoder;
 use crate::uext::UEXT;
@@ -9,23 +9,17 @@ use std::path::Path;
 
 pub struct Encoder {
     range_coder: RangeCoder,
-    /// 符号
-    pub(crate) data: VecDeque<u8>,
+    /// 出力する符号
+    data: VecDeque<u8>,
     /// 未確定桁を格納するバッファ
     buffer: Option<u8>,
     /// 0xff or 0x00 になる値の個数
     /// (参考文献でcarryNと呼ばれるもの)
     carry_n: u32,
+    /// 終了処理が行われたかを示す
+    is_finished: bool,
 }
 impl Encoder {
-    pub fn new(range_coder: RangeCoder) -> Self {
-        Self {
-            data: VecDeque::new(),
-            range_coder: range_coder,
-            buffer: None,
-            carry_n: 0,
-        }
-    }
     /// 1シンボル、エンコードを進める
     pub fn encode(&mut self, simbol_index: usize) {
         //println!("encode index: {}", simbol_index);
@@ -33,22 +27,20 @@ impl Encoder {
         // 下限、レンジの更新
         let range_new = self
             .range_coder
-            .update_range(self.range_coder.simbol_data().simbol_param(simbol_index));
+            .range_when_encode(self.range_coder.simbol_data().simbol_param(simbol_index));
         let lower_bound_new = self
             .range_coder
-            .update_lower_bound(self.range_coder.simbol_data().simbol_param(simbol_index));
+            .lower_bound_when_encode(self.range_coder.simbol_data().simbol_param(simbol_index));
         self.range_coder.set_range(range_new);
-        // lower_boundの更新
         match lower_bound_new {
-            (v, true) => {
-                /*
-                lower_boundがオーバーフローした場合
-                出力待ち桁はbuffer+1 00 00..00 00に確定する
-                */
-                self.move_determined_buffer_to_data(true, None);
-                self.range_coder.set_lower_bound(v);
-            }
-            (v, false) => {
+            (v, is_overflow) => {
+                if is_overflow {
+                    /*
+                    lower_boundがオーバーフローした場合
+                    出力待ち桁はbuffer+1 00 00..00 00に確定する
+                    */
+                    self.move_buffer_to_data_overflow();
+                }
                 self.range_coder.set_lower_bound(v);
             }
         }
@@ -80,7 +72,7 @@ impl Encoder {
                     "buffer+1 00 00..00" になる可能性はないから
                     "buffer ff ff..ff" を出力
                     */
-                    self.move_determined_buffer_to_data(false, Some(buffer_new));
+                    self.move_buffer_to_data_left_shift(buffer_new);
                     // 次の未決定桁はbuffer_newになる
                 }
             }
@@ -88,38 +80,28 @@ impl Encoder {
             self.range_coder
                 .set_lower_bound(self.range_coder.lower_bound() << 8);
             self.range_coder.set_range(self.range_coder.range() << 8);
-            //println!("shift!");
         }
         //一文字エンコード完了
     }
-    /// 確定した桁の出力
-    fn move_determined_buffer_to_data(&mut self, is_overflow: bool, new_buffer: Option<u8>) {
-        match is_overflow {
-            true => match self.buffer {
-                Some(b) => {
-                    self.data.push_back(b + 1);
-                    for _ in 0..self.carry_n {
-                        self.data.push_back(0x00);
-                    }
-                }
-                None => panic!("未確定の桁がない状態でoverflowしました。"),
-            },
-            false => match self.buffer {
-                Some(b) => {
-                    self.data.push_back(b);
-                    for _ in 0..self.carry_n {
-                        self.data.push_back(0xff);
-                    }
-                }
-                None => {
-                    for _ in 0..self.carry_n {
-                        self.data.push_back(0xff);
-                    }
-                }
-            },
+    /// 下限更新時のオーバーフローによるバッファの確定
+    fn move_buffer_to_data_overflow(&mut self) {
+        self.data.push_back(self.buffer.unwrap() + 1);
+        for _ in 0..self.carry_n {
+            self.data.push_back(0x00);
         }
         self.carry_n = 0;
-        self.buffer = new_buffer;
+        self.buffer = None;
+    }
+    /// 左シフト(範囲拡大)によるバッファの確定
+    fn move_buffer_to_data_left_shift(&mut self, new_buffer: u8) {
+        if let Some(buff) = self.buffer {
+            self.data.push_back(buff);
+            for _ in 0..self.carry_n {
+                self.data.push_back(0xff);
+            }
+        }
+        self.carry_n = 0;
+        self.buffer = Some(new_buffer);
     }
     /// エンコード終了後に呼び出して、
     /// buffer,carry_nを出力する。
@@ -142,8 +124,24 @@ impl Encoder {
             self.range_coder
                 .set_lower_bound(self.range_coder.lower_bound() << 8);
         }
+        self.is_finished = true;
+    }
+}
+impl Encoder {
+    pub fn new(range_coder: RangeCoder) -> Self {
+        Self {
+            data: VecDeque::new(),
+            range_coder: range_coder,
+            buffer: None,
+            carry_n: 0,
+            is_finished: false,
+        }
     }
     pub fn write(&self, path: &Path) -> Result<(), String> {
+        if !self.is_finished {
+            println!("終了処理してから書き出してください");
+            // mutableな借用でないため自動で解決するようにはできない
+        }
         /*print!("\n data is : 0x");
         for v in &self.data {
             print!("{:x}", v);

@@ -1,5 +1,6 @@
-//! デコードする時に使う
+//! デコーダ
 //!
+//! 動かない
 use crate::range_coder_struct::RangeCoder;
 use crate::simbol_data::Simbols;
 use crate::simbol_data::MAX_SIMBOL_COUNT;
@@ -16,6 +17,7 @@ pub struct Decoder {
     // bufferから順に読み出して使う
     data: u32,
 }
+//折り畳みを容易にするためのimpl分割
 impl Decoder {
     pub fn new(range_coder: RangeCoder) -> Self {
         Self {
@@ -67,6 +69,8 @@ impl Decoder {
         //println!("simbol data: {:?}", decoder.range_coder.simbol_data());
         Result::Ok(decoder)
     }
+}
+impl Decoder {
     pub fn decode(mut self) -> Vec<usize> {
         let mut decoded_simbol = Vec::new();
         let simbol_total = self.range_coder.simbol_total();
@@ -94,9 +98,10 @@ impl Decoder {
             let try_index = (left + right) / 2;
             let simbol_data = self.range_coder.simbol_data().simbol_param(try_index);
             // Rangeの更新
-            let range_try = self.range_coder.update_range(simbol_data);
+            let range_try = self.range_coder.range_when_encode(simbol_data);
             // lower_boundの更新
-            let (lower_bound_try, of) = self.range_coder.update_lower_bound(simbol_data);
+            let (lower_bound_try, _is_overflow) =
+                self.range_coder.lower_bound_when_encode(simbol_data);
             /*
             println!(
                 "try index is      : ( {}+{} ) /2 = {}",
@@ -156,8 +161,8 @@ impl Decoder {
         // シンボルのパラメータを保存
         let decode_param = self.range_coder.simbol_data().simbol_param(decode_index);
         // range,lower_boundの更新
-        let range_new = self.range_coder.update_range(decode_param);
-        let lower_bound_new = self.range_coder.update_lower_bound(decode_param).0;
+        let range_new = self.range_coder.range_when_encode(decode_param);
+        let lower_bound_new = self.range_coder.lower_bound_when_encode(decode_param).0;
         self.range_coder.set_range(range_new);
         self.range_coder.set_lower_bound(lower_bound_new);
         // 下限をbitシフトしたタイミングで読み出す桁を変えればよい
