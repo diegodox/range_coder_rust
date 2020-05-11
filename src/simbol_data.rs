@@ -2,7 +2,7 @@ use crate::simbol_trait::ForRangeCoder;
 use crate::uext::UEXT;
 use std::u32;
 
-pub const MAX_SIMBOL_COUNT: usize = 32;
+pub const MAX_SIMBOL_COUNT: usize = 256;
 #[derive(Clone, Copy, Debug)]
 /// シンボルの出現回数を示す構造体
 pub struct SimbolParam {
@@ -63,7 +63,6 @@ impl SimbolParam {
 /// シンボル関連のデータを管理する構造体
 ///
 /// まず、この構造体にシンボルを用意する
-#[derive(Debug)]
 pub struct Simbols {
     /// 全文字の出現回数
     total: u32,
