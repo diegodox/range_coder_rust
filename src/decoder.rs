@@ -4,6 +4,7 @@ use crate::range_coder_struct::RangeCoder;
 use crate::simbol_data::Simbols;
 use crate::simbol_data::MAX_SIMBOL_COUNT;
 use crate::uext::UEXT;
+use std::collections::VecDeque;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -11,7 +12,7 @@ use std::path::Path;
 pub struct Decoder {
     range_coder: RangeCoder,
     // エンコーダの出力を入れる
-    buffer: Vec<u8>,
+    buffer: VecDeque<u8>,
     // bufferから順に読み出して使う
     data: u32,
 }
@@ -19,7 +20,7 @@ impl Decoder {
     pub fn new(range_coder: RangeCoder) -> Self {
         Self {
             range_coder: range_coder,
-            buffer: Vec::new(),
+            buffer: VecDeque::new(),
             data: 0,
         }
     }
@@ -62,15 +63,18 @@ impl Decoder {
         let mut decoder = RangeCoder::new(sd).into_decoder();
         // 出力データ読み込み
         decoder.buffer = (&buff[cursor..]).iter().map(|x| *x).collect();
+
+        //println!("simbol data: {:?}", decoder.range_coder.simbol_data());
         Result::Ok(decoder)
     }
     pub fn decode(mut self) -> Vec<usize> {
         let mut decoded_simbol = Vec::new();
         let simbol_total = self.range_coder.simbol_total();
         let mut data_buf = Vec::new();
+        println!("buffer length: {}", self.buffer.len());
         // 最初の32bit読み出し
         for _ in 0..4 {
-            match self.buffer.pop() {
+            match self.buffer.pop_front() {
                 Some(v) => data_buf.push(v),
                 None => {}
             }
@@ -80,7 +84,6 @@ impl Decoder {
         for _ in 0..simbol_total {
             decoded_simbol.push(self.decode_one_simbol());
         }
-        decoded_simbol.reverse();
         decoded_simbol
     }
     /// シンボルを見つける関数
@@ -93,32 +96,63 @@ impl Decoder {
             // Rangeの更新
             let range_try = self.range_coder.update_range(simbol_data);
             // lower_boundの更新
-            let lower_bound_try = match self.range_coder.update_lower_bound(simbol_data) {
-                (v, _bool) => v,
-            };
-            match self.data >= lower_bound_try {
-                // 下限以上
-                true => match self.data - lower_bound_try < range_try {
-                    // 条件ピッタリ
-                    true => {
+            let (lower_bound_try, of) = self.range_coder.update_lower_bound(simbol_data);
+            /*
+            println!(
+                "try index is      : ( {}+{} ) /2 = {}",
+                left, right, try_index
+            );
+            println!("下限 try          : {:x},{:?}", lower_bound_try, of);
+            println!("レンジ try        : {:x}", range_try);
+            println!(
+                "下限+レンジ try   : {:x}",
+                range_try as u64 + lower_bound_try as u64
+            );
+            */
+            if range_try.overflowing_add(lower_bound_try).1 {
+                match range_try.overflowing_add(lower_bound_try).0.cmp(&self.data) {
+                    std::cmp::Ordering::Less | std::cmp::Ordering::Equal => {
+                        //println!("try bigger");
+                        left = try_index + 1;
+                    }
+                    std::cmp::Ordering::Greater => {
                         return try_index;
                     }
-                    // もっと前のシンボル
-                    false => {
+                }
+            } else {
+                match lower_bound_try.cmp(&self.data) {
+                    std::cmp::Ordering::Greater => {
+                        if (left == right) && (try_index == 0) && (left == 0) {
+                            panic!("something wrong!");
+                        }
+                        //println!("try smaller");
+                        //println!();
                         right = try_index;
                     }
-                },
-                // もっと後のシンボル
-                false => {
-                    left = try_index + 1;
+                    _ => match (range_try + lower_bound_try).cmp(&self.data) {
+                        std::cmp::Ordering::Greater => {
+                            return try_index;
+                        }
+                        _ => {
+                            //println!("try bigger");
+                            //println!();
+                            left = try_index + 1;
+                        }
+                    },
                 }
             }
         }
     }
     /// 一文字デコードする関数
     fn decode_one_simbol(&mut self) -> usize {
+        /*println!("開始時のレンジコーダの状態");
+        println!("下限  :0x{:x}", self.range_coder.lower_bound());
+        println!("レンジ:0x{:x}", self.range_coder.range());
+        println!("データ:0x{:x}", self.data);
+        */
         // シンボルを見つける
         let decode_index = self.find_simbol();
+        println!("simbol is: {}", decode_index);
         // シンボルのパラメータを保存
         let decode_param = self.range_coder.simbol_data().simbol_param(decode_index);
         // range,lower_boundの更新
@@ -129,6 +163,7 @@ impl Decoder {
         // 下限をbitシフトしたタイミングで読み出す桁を変えればよい
         static TOP: u32 = 1 << 24;
         while self.range_coder.range() < TOP {
+            //println!("data shift!");
             self.range_coder
                 .set_lower_bound(self.range_coder.lower_bound() << 8);
             self.range_coder.set_range(self.range_coder.range() << 8);
@@ -138,7 +173,7 @@ impl Decoder {
     }
     fn data_shift(&mut self) {
         self.data <<= 8;
-        match self.buffer.pop() {
+        match self.buffer.pop_front() {
             Some(v) => self.data |= v as u32,
             None => {}
         }

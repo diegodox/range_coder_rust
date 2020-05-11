@@ -28,16 +28,18 @@ impl Encoder {
     }
     /// 1シンボル、エンコードを進める
     pub fn encode(&mut self, simbol_index: usize) {
-        // Rangeの更新
-        self.range_coder.set_range(
-            self.range_coder
-                .update_range(self.range_coder.simbol_data().simbol_param(simbol_index)),
-        );
-        // lower_boundの更新
-        match self
+        //println!("encode index: {}", simbol_index);
+
+        // 下限、レンジの更新
+        let range_new = self
             .range_coder
-            .update_lower_bound(self.range_coder.simbol_data().simbol_param(simbol_index))
-        {
+            .update_range(self.range_coder.simbol_data().simbol_param(simbol_index));
+        let lower_bound_new = self
+            .range_coder
+            .update_lower_bound(self.range_coder.simbol_data().simbol_param(simbol_index));
+        self.range_coder.set_range(range_new);
+        // lower_boundの更新
+        match lower_bound_new {
             (v, true) => {
                 /*
                 lower_boundがオーバーフローした場合
@@ -50,6 +52,9 @@ impl Encoder {
                 self.range_coder.set_lower_bound(v);
             }
         }
+
+        //println!("lower_bound is :0x{:x}", self.range_coder.lower_bound());
+        //println!("range is       :0x{:x}", self.range_coder.range());
         /*
         上位8bitの判定
 
@@ -83,6 +88,7 @@ impl Encoder {
             self.range_coder
                 .set_lower_bound(self.range_coder.lower_bound() << 8);
             self.range_coder.set_range(self.range_coder.range() << 8);
+            //println!("shift!");
         }
         //一文字エンコード完了
     }
@@ -138,6 +144,11 @@ impl Encoder {
         }
     }
     pub fn write(&self, path: &Path) -> Result<(), String> {
+        print!("\n data is : 0x");
+        for v in &self.data {
+            print!("{:x}", v);
+        }
+        println!();
         // ファイルオープン
         let mut file = match File::create(path) {
             Ok(file) => file,

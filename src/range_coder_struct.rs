@@ -64,7 +64,7 @@ impl RangeCoder {
                 return range_before * simbol_param.c();
             }
             // Graterになることはない
-            _ => unreachable!("panic! (cum+c) should not be bigger than total"),
+            std::cmp::Ordering::Greater => panic!(),
         }
     }
     /// シンボルをエンコードしたときの、下限と確定した桁があるかどうかを取得

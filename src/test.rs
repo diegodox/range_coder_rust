@@ -17,6 +17,7 @@ mod tests {
         for &i in &test_data {
             encoder.encode(i);
         }
+        encoder.finish();
         encoder.write(path_out).unwrap();
     }
     #[test]
@@ -25,6 +26,7 @@ mod tests {
         let path_in = std::path::Path::new("test_data/test.rc");
         let decoder = Decoder::read(path_in).unwrap();
         let decoded = decoder.decode();
+        println!("{:?}", decoded);
         assert_eq!(test_data, decoded);
     }
 }
