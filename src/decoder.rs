@@ -95,7 +95,7 @@ impl Decoder {
         let mut left = 0;
         let mut right = MAX_SIMBOL_COUNT - 1;
         loop {
-            let try_index = (left + right) / 2;
+            let try_index = (lefbt + right) / 2;
             let simbol_data = self.range_coder.simbol_data().simbol_param(try_index);
             // Rangeの更新
             let range_try = self.range_coder.range_when_encode(simbol_data);

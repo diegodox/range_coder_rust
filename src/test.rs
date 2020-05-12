@@ -6,7 +6,7 @@ mod tests {
     use crate::simbol_data::Simbols;
     #[test]
     fn test_write() {
-        let test_data = vec![0, 1, 2, 3, 4, 4, 3, 2, 1, 0];
+        let test_data = vec![0, 0, 0, 1, 0, 0, 1, 1, 1, 0];
         let path_out = std::path::Path::new("test_data/test.rc");
         let mut sd = Simbols::new();
         for &i in &test_data {
@@ -22,7 +22,7 @@ mod tests {
     }
     #[test]
     fn test_read() {
-        let test_data = vec![0, 1, 2, 3, 4, 4, 3, 2, 1, 0];
+        let test_data = vec![0, 0, 0, 1, 0, 0, 1, 1, 1, 0];
         let path_in = std::path::Path::new("test_data/test.rc");
         let decoder = Decoder::read(path_in).unwrap();
         let decoded = decoder.decode();
