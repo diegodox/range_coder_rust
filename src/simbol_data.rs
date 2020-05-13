@@ -87,7 +87,7 @@ impl Simbols {
         &self.simbol_paramaters
     }
     /// シンボルのパラメータ(cとcum)を取得(imutable)
-    pub(crate) fn simbol_param(&self, simbol_index: usize) -> &SimbolParam {
+    pub fn simbol_param(&self, simbol_index: usize) -> &SimbolParam {
         self.simbol_paramaters.get(simbol_index).unwrap()
     }
     /// シンボルのパラメータを取得(mutable)
