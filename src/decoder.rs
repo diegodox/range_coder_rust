@@ -49,6 +49,7 @@ impl Decoder {
                 .encoder
                 .range_coder()
                 .range_par_total(simbols.total_freq());
+        /*
         println!();
         println!("data=0x{:x}", self.data);
         println!("lobo=0x{:x}", self.encoder.range_coder().lower_bound());
@@ -66,7 +67,7 @@ impl Decoder {
         println!("totl={}", simbols.total_freq());
         println!();
         println!("target_freq={}", rfreq);
-
+        */
         while left < right {
             let mid = (left + right) / 2;
             let mid_param = simbols.simbol_param(mid + 1);
@@ -86,7 +87,7 @@ impl Decoder {
     pub fn decode_one_simbol(&mut self, simbols: &Simbols) -> usize {
         // シンボルを見つける
         let decode_index = self.find_simbol(simbols);
-        println!("simbol is: {}", decode_index);
+        // println!("simbol is: {}", decode_index);
         // エンコーダの状態の更新
         let n = self
             .encoder
