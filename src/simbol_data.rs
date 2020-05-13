@@ -65,7 +65,7 @@ impl SimbolParam {
 /// まず、この構造体にシンボルを用意する
 pub struct Simbols {
     /// 全文字の出現回数
-    total: u32,
+    total_freq: u32,
     /// シンボルのパラメータを保持する配列
     simbol_paramaters: [SimbolParam; MAX_SIMBOL_COUNT],
 }
@@ -73,15 +73,15 @@ pub struct Simbols {
 impl Simbols {
     pub fn new() -> Self {
         Simbols {
-            total: 0,
+            total_freq: 0,
             simbol_paramaters: [SimbolParam::new(); MAX_SIMBOL_COUNT],
         }
     }
 }
 // ゲッターをimpl
 impl Simbols {
-    pub(crate) fn total(&self) -> u32 {
-        self.total
+    pub(crate) fn total_freq(&self) -> u32 {
+        self.total_freq
     }
     pub(crate) fn simbol_paramaters(&self) -> &[SimbolParam] {
         &self.simbol_paramaters
@@ -110,6 +110,6 @@ impl Simbols {
             self.simbol_param_mut(i).set_cum(cum_total);
             cum_total += self.simbol_param(i).c();
         }
-        self.total = cum_total;
+        self.total_freq = cum_total;
     }
 }

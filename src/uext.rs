@@ -40,6 +40,25 @@ impl UEXT for usize {
     }
 }
 
+impl UEXT for u64 {
+    fn to_vec_u8(self) -> Vec<u8> {
+        let mut i = self.clone();
+        let mut v = Vec::new();
+        for _ in 0..std::mem::size_of::<Self>() {
+            v.push((i >> (std::mem::size_of::<Self>() - 1) * 8) as u8);
+            i <<= 8;
+        }
+        v
+    }
+    fn from_vec_u8(v: &[u8]) -> Self {
+        let mut a: Self = 0;
+        for j in 0..v.len() {
+            a |= (*(v.get(j as usize).unwrap()) as Self) << 8 * (v.len() - 1 - j);
+        }
+        a
+    }
+}
+
 #[test]
 fn testuext() {
     let a: usize = 0x010fa5;

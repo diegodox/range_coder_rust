@@ -1,29 +1,21 @@
 use crate::decoder;
 use crate::encoder;
 use crate::simbol_data::SimbolParam;
-use crate::simbol_data::Simbols;
-use std::u32;
+use std::u64;
 
 /// **RangeCoder構造体**
-///
-/// RangeCoder<シンボルのデータ型>で指定
 pub struct RangeCoder {
     /// 下限
-    lower_bound: u32,
+    lower_bound: u64,
     /// 幅
-    range: u32,
-    /// シンボルのデータ
-    simbol_data: Simbols,
+    range: u64,
 }
 impl RangeCoder {
     /// コンストラクタ的なやつ
-    ///
-    /// 先に作成したシンボルデータを引数にとる
-    pub fn new(simbol_data_src: Simbols) -> Self {
+    pub fn new() -> Self {
         RangeCoder {
             lower_bound: 0,
-            range: u32::MAX,
-            simbol_data: simbol_data_src,
+            range: u64::MAX,
         }
     }
     /// エンコーダを作成
@@ -32,62 +24,48 @@ impl RangeCoder {
     }
     /// デコーダを作成
     pub fn into_decoder(self) -> decoder::Decoder {
-        decoder::Decoder::new(self)
+        decoder::Decoder::new(self.into_encoder())
     }
-    /// シンボルをエンコードしたときの、レンジを取得
-    pub(crate) fn range_when_encode(&self, simbol_param: &SimbolParam) -> u32 {
-        let range_before = self.range() / self.simbol_total();
-        match (simbol_param.cum() + simbol_param.c()).cmp(&self.simbol_data.total()) {
-            // レンジ最後のシンボルの場合、通常のレンジ更新で発生する誤差(整数除算によるもの)を含める
-            std::cmp::Ordering::Equal => {
-                return self.range() - (range_before * simbol_param.cum());
-            }
-            // レンジ最後のシンボルでない場合、通常のレンジ更新を行う
-            std::cmp::Ordering::Less => {
-                return range_before * simbol_param.c();
-            }
-            // Graterになることはない
-            std::cmp::Ordering::Greater => panic!(),
-        }
+    pub(crate) fn range_par_total(&self, total_freq: u32) -> u64 {
+        self.range() / total_freq as u64
     }
-    /// シンボルをエンコードしたときの、下限と確定した桁があるかどうかを取得
-    pub(crate) fn lower_bound_when_encode(&self, simbol_param: &SimbolParam) -> (u32, bool) {
-        let range_before = self.range() / self.simbol_total();
-        self.lower_bound()
-            .overflowing_add(range_before * simbol_param.cum())
+    /// レンジ、下限をシンボルをエンコードしたときのものにする
+    ///
+    /// 引数
+    /// simbol_param : エンコードするシンボルのパラメータ
+    /// total_freq : 全シンボルの合計出現回数
+    pub(crate) fn param_update(&mut self, simbol_param: &SimbolParam, total_freq: u32) {
+        let range_par_total = self.range_par_total(total_freq);
+        self.set_range(range_par_total * simbol_param.c() as u64);
+        self.set_lower_bound(self.lower_bound() + (range_par_total * (simbol_param.cum() as u64)))
+    }
+    /// 下限の上位8bitを返して、レンジ、下限を8bit左シフトする
+    pub(crate) fn left_shift(&mut self) -> u8 {
+        let tmp = (self.lower_bound >> (64 - 8)) as u8;
+        self.set_range(self.range() << 8);
+        self.set_lower_bound(self.lower_bound << 8);
+        tmp
     }
 }
 /// ゲッタ
 impl RangeCoder {
-    /// シンボルデータのゲッタ
-    pub fn simbol_data(&self) -> &Simbols {
-        &self.simbol_data
-    }
-    /// シンボルの合計出現回数のゲッタ
-    pub(crate) fn simbol_total(&self) -> u32 {
-        self.simbol_data.total()
-    }
     /// レンジのゲッタ
-    pub fn range(&self) -> u32 {
+    pub fn range(&self) -> u64 {
         self.range
     }
     /// 下限のゲッタ
-    pub fn lower_bound(&self) -> u32 {
+    pub fn lower_bound(&self) -> u64 {
         self.lower_bound
     }
 }
 /// セッタ
 impl RangeCoder {
-    /// シンボルデータのセッタ
-    pub fn swap_simbol_data(&mut self, simbol_data: Simbols) {
-        self.simbol_data = simbol_data;
-    }
     /// 下限のセッタ
-    pub(crate) fn set_lower_bound(&mut self, lower_bound_new: u32) {
+    pub(crate) fn set_lower_bound(&mut self, lower_bound_new: u64) {
         self.lower_bound = lower_bound_new;
     }
     /// レンジのセッタ
-    pub(crate) fn set_range(&mut self, range_new: u32) {
+    pub(crate) fn set_range(&mut self, range_new: u64) {
         self.range = range_new;
     }
 }
