@@ -80,7 +80,7 @@ impl Simbols {
 }
 // ゲッターをimpl
 impl Simbols {
-    pub(crate) fn total_freq(&self) -> u32 {
+    pub fn total_freq(&self) -> u32 {
         self.total_freq
     }
     pub(crate) fn simbol_paramaters(&self) -> &[SimbolParam] {
