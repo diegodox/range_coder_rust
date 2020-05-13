@@ -27,7 +27,7 @@ impl Encoder {
             ^ (self.range_coder.range() + self.range_coder.lower_bound())
             < TOP8
         {
-            println!("桁確定");
+            // println!("桁確定");
             self.data.push_back(self.range_coder.left_shift());
             put_byte += 1
         }
@@ -35,16 +35,18 @@ impl Encoder {
         // 次の上位8bitが変動しないギリギリまで範囲を絞り出力する
         const TOP16: u64 = 1 << (64 - 16);
         while self.range_coder.range() < TOP16 {
-            println!("範囲を絞る");
+            // println!("範囲を絞る");
             let range_new = !self.range_coder.lower_bound() & (TOP16 - 1);
             self.range_coder.set_range(range_new);
             self.data.push_back(self.range_coder.left_shift());
             put_byte += 1;
         }
+        /*
         println!();
         println!("lobo:0x{:x}", self.range_coder.lower_bound());
         println!("rage:0x{:x}", self.range_coder.range());
         println!();
+        */
         //一文字エンコード完了
         put_byte
     }
