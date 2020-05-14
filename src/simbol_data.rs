@@ -83,7 +83,7 @@ impl Simbols {
     pub fn total_freq(&self) -> u32 {
         self.total_freq
     }
-    pub(crate) fn simbol_paramaters(&self) -> &[SimbolParam] {
+    pub fn simbol_paramaters(&self) -> &[SimbolParam] {
         &self.simbol_paramaters
     }
     /// シンボルのパラメータ(cとcum)を取得(imutable)
