@@ -20,11 +20,15 @@ impl RangeCoder {
     }
     /// エンコーダを作成
     pub fn into_encoder(self) -> encoder::Encoder {
-        encoder::Encoder::new(self)
+        let mut ec = encoder::Encoder::new();
+        ec.set_range_coder(self);
+        ec
     }
     /// デコーダを作成
     pub fn into_decoder(self) -> decoder::Decoder {
-        decoder::Decoder::new(self.into_encoder())
+        let mut dc = decoder::Decoder::new();
+        dc.set_encoder(self.into_encoder());
+        dc
     }
     pub(crate) fn range_par_total(&self, total_freq: u32) -> u64 {
         self.range() / total_freq as u64

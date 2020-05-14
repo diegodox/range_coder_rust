@@ -4,22 +4,6 @@
 //!
 //! # 使用方法
 //!
-//! ## エンコード、デコード共通する準備
-//! ```
-//! // レンジコーダのシンボルに使うデータ型(ここではSimbol)にForRangeCoderトレイトをimplする
-//! impl ForRangeCoder for Simbol {
-//!     fn size() -> u8 {
-//!         // シンボル保存時のサイズを返す
-//!     }
-//!     fn save(&self) -> Vec<u8> {
-//!         // シンボルをVec<u8>型に変換
-//!     }
-//!     fn read(from: &[u8]) -> Self {
-//!         //u8のスライスをシンボルに変換
-//!     }
-//! }
-//! ```
-//!
 //! ## エンコード
 //!
 //! ```
@@ -33,29 +17,33 @@
 //! // シンボルを登録し終わったらfinalizeする
 //! simbol_data.finalize();
 //!
-//! // シンボルデータからレンジコーダ構造体を作る
-//! let mut rangecoder = RangeCoder::new(simbol_data);
+//! // エンコーダ構造体を作る
+//! let mut encoder = Encoder::new();
 //!
 //! // 1シンボルずつエンコードしていく
-//! rangecoder.encode(simbol);
+//! // ここではインデックスiをエンコードする
+//! encoder.encode(simbol_data.simbol_param(i), simbol_data.total_freq());
 //!
 //! // エンコードし終わったらfinishを呼ぶ
-//! rangecoder.finish();
+//! encoder.finish();
 //!
-//! // 出力をファイルに保存するには
-//! rc.write(Path::new("保存場所"));
+//! // エンコーダの出力は次のように取り出せる
+//! let output = encoder.data();
 //! ```
 //!
 //! ## デコード
 //! ```
-//! // ファイルからレンジコーダ構造体を復元する
-//! let mut rangecoder = RangeCoder::<Simbol>::read(Path::new("ファイルの場所")).unwrap();
+//! // デコーダ構造体を作る
+//! let mut dc = Decoder::new();
 //!
-//! // 全文字デコードする
-//! let decoded = rangecoder.decode();
+//! // デコーダに復元したいエンコーダ出力をセットする
+//! dc.set_data(data);
 //!
-//! // popで先にエンコードしたものから順に取り出せる
-//! decoded.pop()
+//! // デコード開始前に必ず呼び出す
+//! dc.decode_start();
+//!
+//! // 1シンボル、デコードする(シンボルのインデックスを返す)
+//! let decoded = dc.decode_one_simbol(simbols);
 //! ```
 pub mod decoder;
 pub mod encoder;

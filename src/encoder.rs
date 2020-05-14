@@ -60,10 +60,10 @@ impl Encoder {
     }
 }
 impl Encoder {
-    pub fn new(range_coder: RangeCoder) -> Self {
+    pub fn new() -> Self {
         Self {
             data: VecDeque::new(),
-            range_coder: range_coder,
+            range_coder: RangeCoder::new(),
         }
     }
     pub fn data(&self) -> &VecDeque<u8> {
@@ -74,6 +74,9 @@ impl Encoder {
     }
     pub(crate) fn range_coder_mut(&mut self) -> &mut RangeCoder {
         &mut self.range_coder
+    }
+    pub fn set_range_coder(&mut self, rangecoder: RangeCoder) {
+        self.range_coder = rangecoder;
     }
 }
 /*

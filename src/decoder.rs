@@ -16,9 +16,9 @@ pub struct Decoder {
 }
 //折り畳みを容易にするためのimpl分割
 impl Decoder {
-    pub fn new(encoder: Encoder) -> Self {
+    pub fn new() -> Self {
         Self {
-            encoder: encoder,
+            encoder: Encoder::new(),
             buffer: VecDeque::new(),
             data: 0,
         }
@@ -31,6 +31,9 @@ impl Decoder {
         for _ in 0..n {
             self.data = (self.data << 8) | self.buffer.pop_front().unwrap() as u64;
         }
+    }
+    pub fn set_encoder(&mut self, encoder: Encoder) {
+        self.encoder = encoder;
     }
 }
 impl Decoder {
