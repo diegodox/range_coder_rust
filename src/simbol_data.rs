@@ -36,19 +36,19 @@ impl SimbolParam {
 }
 // ゲッターをimpl
 impl SimbolParam {
-    pub(crate) fn c(&self) -> u32 {
+    pub fn c(&self) -> u32 {
         self.c
     }
-    pub(crate) fn cum(&self) -> u32 {
+    pub fn cum(&self) -> u32 {
         self.cum
     }
 }
 // セッターをimpl
 impl SimbolParam {
-    pub(crate) fn set_c(&mut self, c: u32) {
+    pub fn set_c(&mut self, c: u32) {
         self.c = c;
     }
-    pub(crate) fn set_cum(&mut self, cum: u32) {
+    pub fn set_cum(&mut self, cum: u32) {
         self.cum = cum;
     }
 }
