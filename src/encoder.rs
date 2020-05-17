@@ -1,7 +1,7 @@
 //! エンコーダ
 
-use crate::range_coder_struct::RangeCoder;
-use crate::simbol_data::SimbolParam;
+use crate::alphabet_param::AlphabetParam;
+use crate::range_coder::RangeCoder;
 use std::collections::VecDeque;
 
 pub struct Encoder {
@@ -11,17 +11,16 @@ pub struct Encoder {
     data: VecDeque<u8>,
 }
 impl Encoder {
-    /// 1シンボル、エンコードを進める
+    /// 1アルファベット、エンコードを進める
     /// 返値は出力したバイト数
-    pub fn encode(&mut self, simbol_param: &SimbolParam, total_freq: u32) -> u32 {
+    pub fn encode(&mut self, alphabet_param: &AlphabetParam, total_freq: u32) -> u32 {
+        // 出力したバイト数を入れる
         let mut put_byte = 0;
         // 下限、レンジの更新
-        self.range_coder.param_update(simbol_param, total_freq);
-        /*
-        上位8bitの判定
-
-        上位8bitが決定した場合、シフトを行い、決定した桁を取り出しておく
-        */
+        self.range_coder.param_update(alphabet_param, total_freq);
+        // 桁確定1
+        // 上位8bitが決定した場合
+        // 8bit左シフトを行い、決定した桁を取り出しておく
         const TOP8: u64 = 1 << (64 - 8);
         while (self.range_coder.lower_bound())
             ^ (self.range_coder.range() + self.range_coder.lower_bound())
@@ -31,6 +30,7 @@ impl Encoder {
             self.data.push_back(self.range_coder.left_shift());
             put_byte += 1
         }
+        // 桁確定2
         // レンジが小さくなったら
         // 次の上位8bitが変動しないギリギリまで範囲を絞り出力する
         const TOP16: u64 = 1 << (64 - 16);
@@ -47,7 +47,7 @@ impl Encoder {
         println!("rage:0x{:x}", self.range_coder.range());
         println!();
         */
-        //一文字エンコード完了
+        //1アルファベットエンコード完了
         put_byte
     }
     /// エンコード終了後に呼び出して、
@@ -79,49 +79,3 @@ impl Encoder {
         self.range_coder = rangecoder;
     }
 }
-/*
-pub fn write(&self, path: &Path) -> Result<(), String> {
-    /*print!("\n data is : 0x");
-    for v in &self.data {
-        print!("{:x}", v);
-    }
-    */
-    println!();
-    // ファイルオープン
-    let mut file = match File::create(path) {
-        Ok(file) => file,
-        Err(_) => return Result::Err("Error happend creating (or opening) file".to_string()),
-    };
-    // バッファ宣言
-    let mut buff = Vec::new();
-    // usizeのサイズ書き込み
-    buff.append(&mut vec![std::mem::size_of::<usize>() as u8]);
-    // インデックス、出現数を交互に書き込み
-    // 出現数が1以上のシンボルの出現数、インデックスをvectorに集める
-    let v: Vec<_> = self
-        .range_coder
-        .simbol_data()
-        .simbol_paramaters()
-        .iter()
-        .enumerate()
-        .map(|(i, parm)| (i, parm.c))
-        .filter(|(_, c)| *c > 1)
-        .collect();
-    // 保存するシンボルの数を書き込む
-    buff.append(&mut v.len().to_vec_u8());
-    // シンボルを書き込む
-    for (index, simbol_c) in v {
-        buff.append(&mut index.to_vec_u8());
-        buff.append(&mut simbol_c.to_vec_u8());
-    }
-    // 出力データ書き込み
-    for &i in &self.data {
-        buff.push(i);
-    }
-    // ファイルに書き込み
-    match file.write_all(&buff) {
-        Ok(_) => return Result::Ok(()),
-        Err(_) => return Result::Err("Some error happened while writing buffer".to_string()),
-    };
-}
-*/

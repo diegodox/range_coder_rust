@@ -1,6 +1,6 @@
+use crate::alphabet_param::AlphabetParam;
 use crate::decoder;
 use crate::encoder;
-use crate::simbol_data::SimbolParam;
 use std::u64;
 
 /// **RangeCoder構造体**
@@ -19,12 +19,14 @@ impl RangeCoder {
         }
     }
     /// エンコーダを作成
+    // 説明会用:使わない
     pub fn into_encoder(self) -> encoder::Encoder {
         let mut ec = encoder::Encoder::new();
         ec.set_range_coder(self);
         ec
     }
     /// デコーダを作成
+    // 説明会用:使わない
     pub fn into_decoder(self) -> decoder::Decoder {
         let mut dc = decoder::Decoder::new();
         dc.set_encoder(self.into_encoder());
@@ -33,15 +35,15 @@ impl RangeCoder {
     pub(crate) fn range_par_total(&self, total_freq: u32) -> u64 {
         self.range() / total_freq as u64
     }
-    /// レンジ、下限をシンボルをエンコードしたときのものにする
+    /// レンジ、下限をアルファベットをエンコードしたときのものにする
     ///
     /// 引数
-    /// simbol_param : エンコードするシンボルのパラメータ
-    /// total_freq : 全シンボルの合計出現回数
-    pub(crate) fn param_update(&mut self, simbol_param: &SimbolParam, total_freq: u32) {
+    /// alphabet_param : エンコードするアルファベットのパラメータ
+    /// total_freq : 全アルファベットの合計出現回数
+    pub(crate) fn param_update(&mut self, alphabet_param: &AlphabetParam, total_freq: u32) {
         let range_par_total = self.range_par_total(total_freq);
-        self.set_range(range_par_total * simbol_param.c() as u64);
-        self.set_lower_bound(self.lower_bound() + (range_par_total * (simbol_param.cum() as u64)))
+        self.set_range(range_par_total * alphabet_param.c() as u64);
+        self.set_lower_bound(self.lower_bound() + (range_par_total * (alphabet_param.cum() as u64)))
     }
     /// 下限の上位8bitを返して、レンジ、下限を8bit左シフトする
     pub(crate) fn left_shift(&mut self) -> u8 {

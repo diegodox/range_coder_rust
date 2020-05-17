@@ -2,21 +2,21 @@
 mod tests {
     use crate::decoder::Decoder;
     use crate::encoder::Encoder;
-    use crate::simbol_data::Simbols;
+    use crate::freq_table::FreqTable;
     #[test]
     fn test_encode_and_decode() {
         // テストデータを定義
         let test_data = vec![2, 1, 1, 3, 1, 4, 2, 1, 0, 1, 5, 9, 8, 7, 6, 5];
-        // シンボルデータを準備
-        let mut sd = Simbols::new();
+        // アルファベットデータを準備
+        let mut sd = FreqTable::new(10);
         for &i in &test_data {
-            // シンボルを追加していく
-            sd.add_simbol(i);
+            // アルファベットを追加していく
+            sd.add_alphabet(i);
         }
-        // シンボルの追加を終了
+        // アルファベットの追加を終了
         sd.finalize();
-        // （確認用)シンボルデータのプリント
-        for i in sd.simbol_paramaters() {
+        // （確認用)アルファベットデータのプリント
+        for i in sd.alphabet_params() {
             if i.c() == 0 {
                 break;
             }
@@ -25,10 +25,10 @@ mod tests {
         println!("encode");
         // エンコーダを準備
         let mut encoder = Encoder::new();
-        // 1シンボルずつエンコード
+        // 1アルファベットずつエンコード
         for &i in &test_data {
             println!("encode {}", i);
-            encoder.encode(sd.simbol_param(i), sd.total_freq());
+            encoder.encode(sd.alphabet_param(i), sd.total_freq());
         }
         // エンコード終了処理
         encoder.finish();
@@ -46,9 +46,14 @@ mod tests {
         // デコード開始処理
         decoder.decode_start();
         // 1文字ずつデコード
+        let mut decodeds = vec![0; test_data.len()];
         println!("デコードされたインデックスは");
-        for _ in 0..test_data.len() {
-            print!("{} , ", decoder.decode_one_simbol(&sd));
+        for i in 0..test_data.len() {
+            let decoded = decoder.decode_one_alphabet(&sd);
+            print!("{} , ", decoded);
+            decodeds[i] = decoded;
         }
+        println!();
+        assert_eq!(decodeds, test_data);
     }
 }
