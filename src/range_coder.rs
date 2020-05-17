@@ -1,17 +1,19 @@
+//! レンジコーダ(基本ロジック)
 use crate::alphabet_param::AlphabetParam;
 use crate::decoder;
 use crate::encoder;
 use std::u64;
 
-/// **RangeCoder構造体**
+/// RangeCoder構造体
 pub struct RangeCoder {
     /// 下限
     lower_bound: u64,
     /// 幅
     range: u64,
 }
+/// コンストラクタ
 impl RangeCoder {
-    /// コンストラクタ的なやつ
+    /// コンストラクタ
     pub fn new() -> Self {
         RangeCoder {
             lower_bound: 0,
@@ -32,9 +34,9 @@ impl RangeCoder {
         dc.set_encoder(self.into_encoder());
         dc
     }
-    pub(crate) fn range_par_total(&self, total_freq: u32) -> u64 {
-        self.range() / total_freq as u64
-    }
+}
+/// ロジック
+impl RangeCoder {
     /// レンジ、下限をアルファベットをエンコードしたときのものにする
     ///
     /// 引数
@@ -62,6 +64,10 @@ impl RangeCoder {
     /// 下限のゲッタ
     pub fn lower_bound(&self) -> u64 {
         self.lower_bound
+    }
+    /// 1出現頻度あたりのレンジを計算
+    pub(crate) fn range_par_total(&self, total_freq: u32) -> u64 {
+        self.range() / total_freq as u64
     }
 }
 /// セッタ

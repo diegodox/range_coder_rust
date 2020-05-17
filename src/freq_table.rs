@@ -1,16 +1,17 @@
+//! 頻度表
 use crate::alphabet_param::AlphabetParam;
 use std::u32;
 const MAX_ALPHABET_COUNT: usize = 10000;
-/// アルファベット関連のデータを管理する構造体
+/// 頻度表構造体
 ///
-/// まず、この構造体にアルファベットを用意する
+/// レンジコーダはこの頻度表をもとに計算する
 pub struct FreqTable {
     /// 全アルファベットの出現頻度
     total_freq: u32,
     /// アルファベットのパラメータを保持する配列
     alphabet_params: Vec<AlphabetParam>,
 }
-/// コンストラクタをimpl
+/// コンストラクタ
 impl FreqTable {
     pub fn new(alphabet_count: usize) -> Self {
         if alphabet_count > MAX_ALPHABET_COUNT {
@@ -24,7 +25,7 @@ impl FreqTable {
         }
     }
 }
-// ゲッターをimpl
+/// ゲッター
 impl FreqTable {
     /// 全アルファベットの頻度合計値
     pub fn total_freq(&self) -> u32 {
@@ -46,7 +47,7 @@ impl FreqTable {
         self.alphabet_params.len()
     }
 }
-// 他の関数をimpl
+/// ロジック
 impl FreqTable {
     /// アルファベットを追加
     ///

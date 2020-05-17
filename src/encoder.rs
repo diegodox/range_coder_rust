@@ -4,14 +4,17 @@ use crate::alphabet_param::AlphabetParam;
 use crate::range_coder::RangeCoder;
 use std::collections::VecDeque;
 
+/// エンコーダ構造体
 pub struct Encoder {
     /// レンジコーダ
     range_coder: RangeCoder,
     /// 出力する符号
     data: VecDeque<u8>,
 }
+/// ロジック
 impl Encoder {
     /// 1アルファベット、エンコードを進める
+    ///
     /// 返値は出力したバイト数
     pub fn encode(&mut self, alphabet_param: &AlphabetParam, total_freq: u32) -> u32 {
         // 出力したバイト数を入れる
@@ -59,6 +62,7 @@ impl Encoder {
         }
     }
 }
+/// コンストラクタ
 impl Encoder {
     pub fn new() -> Self {
         Self {
@@ -66,6 +70,9 @@ impl Encoder {
             range_coder: RangeCoder::new(),
         }
     }
+}
+/// ゲッタ
+impl Encoder {
     pub fn data(&self) -> &VecDeque<u8> {
         &self.data
     }
@@ -75,6 +82,10 @@ impl Encoder {
     pub(crate) fn range_coder_mut(&mut self) -> &mut RangeCoder {
         &mut self.range_coder
     }
+}
+/// セッタ
+impl Encoder {
+    /// レンジコーダを切り替える(?)
     pub fn set_range_coder(&mut self, rangecoder: RangeCoder) {
         self.range_coder = rangecoder;
     }

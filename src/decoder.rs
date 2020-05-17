@@ -3,6 +3,7 @@ use crate::encoder::Encoder;
 use crate::freq_table::FreqTable;
 use std::collections::VecDeque;
 
+/// デコーダ構造体
 pub struct Decoder {
     // エンコーダの動作を再現するためのエンコーダ構造体
     encoder: Encoder,
@@ -11,7 +12,7 @@ pub struct Decoder {
     // bufferから順に読み出して使う
     data: u64,
 }
-//折り畳みを容易にするためのimpl分割
+/// コンストラクタ
 impl Decoder {
     pub fn new() -> Self {
         Self {
@@ -20,25 +21,28 @@ impl Decoder {
             data: 0,
         }
     }
+}
+/// セッター
+impl Decoder {
     pub fn set_data(&mut self, data: VecDeque<u8>) {
         self.buffer = data;
+    }
+    pub fn set_encoder(&mut self, encoder: Encoder) {
+        self.encoder = encoder;
+    }
+}
+/// ロジック
+impl Decoder {
+    /// デコード開始用の関数
+    pub fn decode_start(&mut self) {
+        // 最初の64bit読み出し
+        self.shift_left_buffer(8);
     }
     /// dataをn回左シフトして、バッファからデータを入れる
     fn shift_left_buffer(&mut self, n: u32) {
         for _ in 0..n {
             self.data = (self.data << 8) | self.buffer.pop_front().unwrap() as u64;
         }
-    }
-    pub fn set_encoder(&mut self, encoder: Encoder) {
-        self.encoder = encoder;
-    }
-}
-impl Decoder {
-    // デコード開始用の関数
-    pub fn decode_start(&mut self) {
-        println!("buffer length: {}", self.buffer.len());
-        // 最初の64bit読み出し
-        self.shift_left_buffer(8);
     }
     /// アルファベットを見つける関数
     fn find_alphabet(&self, freq_table: &FreqTable) -> usize {
