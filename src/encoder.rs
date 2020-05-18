@@ -79,9 +79,6 @@ impl Encoder {
     pub(crate) fn range_coder(&self) -> &RangeCoder {
         &self.range_coder
     }
-    pub(crate) fn range_coder_mut(&mut self) -> &mut RangeCoder {
-        &mut self.range_coder
-    }
 }
 /// セッタ
 impl Encoder {

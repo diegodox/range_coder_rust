@@ -39,10 +39,6 @@ impl FreqTable {
     pub fn alphabet_param(&self, alphabet_index: usize) -> &AlphabetParam {
         self.alphabet_params.get(alphabet_index).unwrap()
     }
-    /// アルファベットのパラメータを取得(mutable)
-    pub(crate) fn alphabet_param_mut(&mut self, alphabet_index: usize) -> &mut AlphabetParam {
-        self.alphabet_params.get_mut(alphabet_index).unwrap()
-    }
     pub fn alphabet_count(&self) -> usize {
         self.alphabet_params.len()
     }
