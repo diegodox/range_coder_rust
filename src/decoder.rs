@@ -1,34 +1,45 @@
 //! デコーダ
-use crate::encoder::Encoder;
 use crate::freq_table::FreqTable;
+use crate::range_coder::RangeCoder;
 use std::collections::VecDeque;
 
 /// デコーダ構造体
 pub struct Decoder {
     // エンコーダの動作を再現するためのエンコーダ構造体
-    encoder: Encoder,
+    range_coder: RangeCoder,
     // エンコーダの出力を入れる
     buffer: VecDeque<u8>,
     // bufferから順に読み出して使う
     data: u64,
 }
-/// コンストラクタ
+
+/// コンストラクタ,セッター,ゲッター
 impl Decoder {
+    /// コンストラクタ
     pub fn new() -> Self {
         Self {
-            encoder: Encoder::new(),
+            range_coder: RangeCoder::new(),
             buffer: VecDeque::new(),
             data: 0,
         }
     }
-}
-/// セッター
-impl Decoder {
     pub fn set_data(&mut self, data: VecDeque<u8>) {
         self.buffer = data;
     }
-    pub fn set_encoder(&mut self, encoder: Encoder) {
-        self.encoder = encoder;
+    pub fn set_rangecoder(&mut self, range_coder: RangeCoder) {
+        self.range_coder = range_coder;
+    }
+    pub fn range_coder(&self) -> &RangeCoder {
+        &self.range_coder
+    }
+    pub fn range_coder_mut(&mut self) -> &mut RangeCoder {
+        &mut self.range_coder
+    }
+    pub fn buffer(&self) -> &VecDeque<u8> {
+        &self.buffer
+    }
+    pub fn data(&self) -> u64 {
+        self.data
     }
 }
 /// ロジック
@@ -39,7 +50,7 @@ impl Decoder {
         self.shift_left_buffer(8);
     }
     /// dataをn回左シフトして、バッファからデータを入れる
-    fn shift_left_buffer(&mut self, n: u32) {
+    fn shift_left_buffer(&mut self, n: usize) {
         for _ in 0..n {
             self.data = (self.data << 8) | self.buffer.pop_front().unwrap() as u64;
         }
@@ -48,11 +59,8 @@ impl Decoder {
     fn find_alphabet(&self, freq_table: &FreqTable) -> usize {
         let mut left = 0;
         let mut right = freq_table.alphabet_count() - 1;
-        let rfreq = (self.data - self.encoder.range_coder().lower_bound())
-            / self
-                .encoder
-                .range_coder()
-                .range_par_total(freq_table.total_freq());
+        let rfreq = (self.data - self.range_coder().lower_bound())
+            / self.range_coder().range_par_total(freq_table.total_freq());
         /*
         println!();
         println!("data=0x{:x}", self.data);
@@ -89,15 +97,15 @@ impl Decoder {
     }
     /// 一文字デコードする関数
     pub fn decode_one_alphabet(&mut self, freq_table: &FreqTable) -> usize {
-        // アルファベットを見つける
+        // デコードするアルファベットのインデックスをとってくる
         let decode_index = self.find_alphabet(freq_table);
         // println!("alphabet index is: {}", decode_index);
         // エンコーダの状態の更新
-        let n = self.encoder.encode(
+        let n = self.range_coder_mut().param_update(
             freq_table.alphabet_param(decode_index),
             freq_table.total_freq(),
         );
-        self.shift_left_buffer(n);
+        self.shift_left_buffer(n.len());
         decode_index
     }
 }

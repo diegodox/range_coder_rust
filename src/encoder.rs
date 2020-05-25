@@ -17,41 +17,11 @@ impl Encoder {
     ///
     /// 返値は出力したバイト数
     pub fn encode(&mut self, alphabet_param: &AlphabetParam, total_freq: u32) -> u32 {
-        // 出力したバイト数を入れる
-        let mut put_byte = 0;
         // 下限、レンジの更新
-        self.range_coder.param_update(alphabet_param, total_freq);
-        // 桁確定1
-        // 上位8bitが決定した場合
-        // 8bit左シフトを行い、決定した桁を取り出しておく
-        const TOP8: u64 = 1 << (64 - 8);
-        while (self.range_coder.lower_bound())
-            ^ (self.range_coder.range() + self.range_coder.lower_bound())
-            < TOP8
-        {
-            // println!("桁確定");
-            self.data.push_back(self.range_coder.left_shift());
-            put_byte += 1
-        }
-        // 桁確定2
-        // レンジが小さくなったら
-        // 次の上位8bitが変動しないギリギリまで範囲を絞り出力する
-        const TOP16: u64 = 1 << (64 - 16);
-        while self.range_coder.range() < TOP16 {
-            // println!("範囲を絞る");
-            let range_new = !self.range_coder.lower_bound() & (TOP16 - 1);
-            self.range_coder.set_range(range_new);
-            self.data.push_back(self.range_coder.left_shift());
-            put_byte += 1;
-        }
-        /*
-        println!();
-        println!("lobo:0x{:x}", self.range_coder.lower_bound());
-        println!("rage:0x{:x}", self.range_coder.range());
-        println!();
-        */
-        //1アルファベットエンコード完了
-        put_byte
+        let mut out = self.range_coder.param_update(alphabet_param, total_freq);
+        let len = out.len();
+        self.data.append(&mut out);
+        len as u32
     }
     /// エンコード終了後に呼び出して、
     /// 下限を出力
@@ -75,15 +45,5 @@ impl Encoder {
 impl Encoder {
     pub fn data(&self) -> &VecDeque<u8> {
         &self.data
-    }
-    pub(crate) fn range_coder(&self) -> &RangeCoder {
-        &self.range_coder
-    }
-}
-/// セッタ
-impl Encoder {
-    /// レンジコーダを切り替える(?)
-    pub fn set_range_coder(&mut self, rangecoder: RangeCoder) {
-        self.range_coder = rangecoder;
     }
 }
