@@ -4,3 +4,4 @@ pub mod encoder;
 pub mod freq_table;
 pub mod range_coder;
 pub(crate) mod test;
+pub mod pmodel;

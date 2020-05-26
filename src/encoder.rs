@@ -1,6 +1,5 @@
 //! エンコーダ
-
-use crate::alphabet_param::AlphabetParam;
+use crate::pmodel::PModel;
 use crate::range_coder::RangeCoder;
 use std::collections::VecDeque;
 
@@ -16,9 +15,13 @@ impl Encoder {
     /// 1アルファベット、エンコードを進める
     ///
     /// 返値は出力したバイト数
-    pub fn encode(&mut self, alphabet_param: &AlphabetParam, total_freq: u32) -> u32 {
+    pub fn encode<T: PModel>(&mut self, pmodel: &T, index: usize) -> u32 {
         // 下限、レンジの更新
-        let mut out = self.range_coder.param_update(alphabet_param, total_freq);
+        let mut out = self.range_coder.param_update(
+            pmodel.c_freq(index),
+            pmodel.cum_freq(index),
+            pmodel.total_freq(),
+        );
         let len = out.len();
         self.data.append(&mut out);
         len as u32

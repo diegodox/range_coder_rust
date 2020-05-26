@@ -1,5 +1,7 @@
-//! 頻度表
+//! 確率モデルの例として頻度表
 use crate::alphabet_param::AlphabetParam;
+use crate::decoder::Decoder;
+use crate::pmodel::PModel;
 use std::u32;
 const MAX_ALPHABET_COUNT: usize = 10000;
 /// 頻度表構造体
@@ -25,19 +27,38 @@ impl FreqTable {
         }
     }
 }
-/// ゲッター
-impl FreqTable {
-    /// 全アルファベットの頻度合計値
-    pub fn total_freq(&self) -> u32 {
+impl PModel for FreqTable {
+    fn c_freq(&self, index: usize) -> u32 {
+        self.alphabet_params.get(index).unwrap().c()
+    }
+    fn cum_freq(&self, index: usize) -> u32 {
+        self.alphabet_params.get(index).unwrap().cum()
+    }
+    fn total_freq(&self) -> u32 {
         self.total_freq
     }
+    fn find_index(&self, decoder: &Decoder) -> usize {
+        let mut left = 0;
+        let mut right = self.alphabet_count() - 1;
+        let rfreq = (decoder.data() - decoder.range_coder().lower_bound())
+            / decoder.range_coder().range_par_total(self.total_freq());
+        while left < right {
+            let mid = (left + right) / 2;
+            let mid_cum = self.cum_freq(mid + 1);
+            if mid_cum as u64 <= rfreq {
+                left = mid + 1;
+            } else {
+                right = mid;
+            }
+        }
+        left
+    }
+}
+/// ゲッター
+impl FreqTable {
     /// アルファベットリストを取得
     pub fn alphabet_params(&self) -> &[AlphabetParam] {
         &self.alphabet_params
-    }
-    /// アルファベットのパラメータ(cとcum)を取得(imutable)
-    pub fn alphabet_param(&self, alphabet_index: usize) -> &AlphabetParam {
-        self.alphabet_params.get(alphabet_index).unwrap()
     }
     /// アルファベットの種類数を取得
     pub fn alphabet_count(&self) -> usize {

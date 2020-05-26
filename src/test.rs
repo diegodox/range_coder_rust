@@ -3,6 +3,7 @@ mod tests {
     use crate::decoder::Decoder;
     use crate::encoder::Encoder;
     use crate::freq_table::FreqTable;
+    use crate::pmodel::PModel;
     #[test]
     fn test_encode_and_decode() {
         // テストデータを定義
@@ -18,12 +19,7 @@ mod tests {
         // （確認用)アルファベットデータのプリント
         println!("FREQ TABLE");
         for i in 0..sd.alphabet_params().len() {
-            println!(
-                "index:{},c:{},cum:{}",
-                i,
-                sd.alphabet_param(i).c(),
-                sd.alphabet_param(i).cum()
-            );
+            println!("index:{},c:{},cum:{}", i, sd.c_freq(i), sd.cum_freq(i));
         }
         println!("\nSTART ENCODING");
         // エンコーダを準備
@@ -32,7 +28,7 @@ mod tests {
         print!("encode : ");
         for &i in &test_data {
             print!("{},", i);
-            encoder.encode(sd.alphabet_param(i), sd.total_freq());
+            encoder.encode::<FreqTable>(&sd, i);
         }
         // エンコード終了処理
         encoder.finish();

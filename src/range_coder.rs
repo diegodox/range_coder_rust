@@ -1,5 +1,4 @@
 //! レンジコーダ(基本ロジック)
-use crate::alphabet_param::AlphabetParam;
 use std::collections::VecDeque;
 use std::u64;
 
@@ -29,15 +28,14 @@ impl RangeCoder {
     /// total_freq : 全アルファベットの合計出現回数
     pub(crate) fn param_update(
         &mut self,
-        alphabet_param: &AlphabetParam,
+        c_freq: u32,
+        cum_freq: u32,
         total_freq: u32,
     ) -> VecDeque<u8> {
         let mut out_bytes = VecDeque::new();
         let range_par_total = self.range_par_total(total_freq);
-        self.set_range(range_par_total * alphabet_param.c() as u64);
-        self.set_lower_bound(
-            self.lower_bound() + (range_par_total * (alphabet_param.cum() as u64)),
-        );
+        self.set_range(range_par_total * c_freq as u64);
+        self.set_lower_bound(self.lower_bound() + (range_par_total * (cum_freq as u64)));
         const TOP8: u64 = 1 << (64 - 8);
         const TOP16: u64 = 1 << (64 - 16);
         while self.lower_bound() ^ self.upper_bound().unwrap() < TOP8 {

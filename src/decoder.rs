@@ -1,8 +1,7 @@
 //! デコーダ
-use crate::freq_table::FreqTable;
+use crate::pmodel::PModel;
 use crate::range_coder::RangeCoder;
 use std::collections::VecDeque;
-
 /// デコーダ構造体
 pub struct Decoder {
     // エンコーダの動作を再現するためのエンコーダ構造体
@@ -55,57 +54,21 @@ impl Decoder {
             self.data = (self.data << 8) | self.buffer.pop_front().unwrap() as u64;
         }
     }
-    /// アルファベットを見つける関数
-    fn find_alphabet(&self, freq_table: &FreqTable) -> usize {
-        let mut left = 0;
-        let mut right = freq_table.alphabet_count() - 1;
-        let rfreq = (self.data - self.range_coder().lower_bound())
-            / self.range_coder().range_par_total(freq_table.total_freq());
-        /*
-        println!();
-        println!("data=0x{:x}", self.data);
-        println!("lobo=0x{:x}", self.encoder.range_coder().lower_bound());
-        println!(
-            "da-l=0x{:x}",
-            self.data - self.encoder.range_coder().lower_bound()
-        );
-        println!(
-            "r/to=0x{:x}",
-            self.encoder
-                .range_coder()
-                .range_par_total(freq_table.total_freq())
-        );
-        println!("rage=0x{:x}", self.encoder.range_coder().range());
-        println!("totl={}", freq_table.total_freq());
-        println!();
-        println!("target_freq={}", rfreq);
-        */
-        while left < right {
-            let mid = (left + right) / 2;
-            let mid_param = freq_table.alphabet_param(mid + 1);
-            /*
-            println!("mid_index:{}", mid);
-            println!("mid+1 param c:{},cum:{}", mid_param.c(), mid_param.cum());
-            */
-            if mid_param.cum() as u64 <= rfreq {
-                left = mid + 1;
-            } else {
-                right = mid;
-            }
-        }
-        left
-    }
     /// 一文字デコードする関数
-    pub fn decode_one_alphabet(&mut self, freq_table: &FreqTable) -> usize {
+    pub fn decode_one_alphabet<T: PModel>(&mut self, pmodel: &T) -> usize {
         // デコードするアルファベットのインデックスをとってくる
-        let decode_index = self.find_alphabet(freq_table);
+        let decode_index = pmodel.find_index(self);
         // println!("alphabet index is: {}", decode_index);
         // エンコーダの状態の更新
-        let n = self.range_coder_mut().param_update(
-            freq_table.alphabet_param(decode_index),
-            freq_table.total_freq(),
-        );
-        self.shift_left_buffer(n.len());
+        let n = self
+            .range_coder_mut()
+            .param_update(
+                pmodel.c_freq(decode_index),
+                pmodel.cum_freq(decode_index),
+                pmodel.total_freq(),
+            )
+            .len();
+        self.shift_left_buffer(n);
         decode_index
     }
 }
