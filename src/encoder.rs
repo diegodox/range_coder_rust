@@ -57,4 +57,7 @@ impl Encoder {
     pub fn data(&self) -> &VecDeque<u8> {
         &self.data
     }
+    pub fn range_coder(&self) -> &RangeCoder {
+        &self.range_coder
+    }
 }
