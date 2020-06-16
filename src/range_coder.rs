@@ -96,7 +96,7 @@ impl RangeCoder {
     /// この関数では判定はせず、動作のみ
     /// 条件は`range < 1<<(64-16)`
     fn range_reduction_expansion(&mut self) -> u8 {
-        let range_new = !(self.lower_bound() & ((1 << (64 - 16)) - 1));
+        let range_new = !self.lower_bound() & ((1 << (64 - 16)) - 1);
         self.set_range(range_new);
         self.left_shift()
     }
