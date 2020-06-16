@@ -35,7 +35,13 @@ impl RangeCoder {
         let mut out_bytes = VecDeque::new();
         let range_par_total = self.range_par_total(total_freq);
         self.set_range(range_par_total * c_freq as u64);
-        self.set_lower_bound(self.lower_bound() + (range_par_total * (cum_freq as u64)));
+        let (lower_bound_new, is_overflow) = self
+            .lower_bound()
+            .overflowing_add(range_par_total * (cum_freq as u64));
+        if is_overflow {
+            panic!("OVERFLOW HERE");
+        }
+        self.set_lower_bound(lower_bound_new);
         const TOP8: u64 = 1 << (64 - 8);
         const TOP16: u64 = 1 << (64 - 16);
         while self.lower_bound() ^ self.upper_bound().unwrap() < TOP8 {
