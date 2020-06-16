@@ -1,4 +1,5 @@
 //! レンジコーダ(基本ロジック)
+use crate::error::RangeCoderError;
 use std::collections::VecDeque;
 use std::u64;
 
@@ -9,14 +10,19 @@ pub struct RangeCoder {
     /// 幅
     range: u64,
 }
-/// コンストラクタ
-impl RangeCoder {
-    /// コンストラクタ
-    pub fn new() -> Self {
+impl Default for RangeCoder {
+    fn default() -> Self {
         RangeCoder {
             lower_bound: 0,
             range: u64::MAX,
         }
+    }
+}
+/// コンストラクタ
+impl RangeCoder {
+    /// コンストラクタ
+    pub fn new() -> Self {
+        RangeCoder::default()
     }
 }
 /// ロジック
@@ -31,7 +37,7 @@ impl RangeCoder {
         c_freq: u32,
         cum_freq: u32,
         total_freq: u32,
-    ) -> VecDeque<u8> {
+    ) -> Result<VecDeque<u8>, RangeCoderError> {
         let mut out_bytes = VecDeque::new();
         let range_par_total = self.range_par_total(total_freq);
         self.set_range(range_par_total * c_freq as u64);
@@ -39,7 +45,10 @@ impl RangeCoder {
             .lower_bound()
             .overflowing_add(range_par_total * (cum_freq as u64));
         if is_overflow {
-            panic!("OVERFLOW HERE");
+            return Result::Err(RangeCoderError::LowerBoundOverflow {
+                lower_bound: self.lower_bound(),
+                add_val: range_par_total * (cum_freq as u64),
+            });
         }
         self.set_lower_bound(lower_bound_new);
         const TOP8: u64 = 1 << (64 - 8);
@@ -50,7 +59,7 @@ impl RangeCoder {
         while self.range() < TOP16 {
             out_bytes.push_back(self.range_reduction_expansion());
         }
-        out_bytes
+        Result::Ok(out_bytes)
     }
     /// 下限の上位8bitを返して、レンジ、下限を8bit左シフトする
     pub(crate) fn left_shift(&mut self) -> u8 {
@@ -90,14 +99,11 @@ impl RangeCoder {
     }
     /// 上限のゲッタ
     pub fn upper_bound(&self) -> Result<u64, u64> {
-        match self.lower_bound().overflowing_add(self.range()) {
-            (v, b) => {
-                if b {
-                    Err(v)
-                } else {
-                    Ok(v)
-                }
-            }
+        let (v, b) = self.lower_bound().overflowing_add(self.range());
+        if b {
+            Err(v)
+        } else {
+            Ok(v)
         }
     }
     /// 1出現頻度あたりのレンジを計算

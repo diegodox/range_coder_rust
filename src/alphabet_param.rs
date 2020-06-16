@@ -8,9 +8,14 @@ pub struct AlphabetParam {
     pub(crate) c: u32,
 }
 /// コンストラクタ
+impl Default for AlphabetParam {
+    fn default() -> Self {
+        AlphabetParam { cum: 0, c: 0 }
+    }
+}
 impl AlphabetParam {
     pub fn new() -> Self {
-        AlphabetParam { cum: 0, c: 0 }
+        AlphabetParam::default()
     }
 }
 /// ゲッター

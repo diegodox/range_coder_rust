@@ -17,11 +17,14 @@ impl Encoder {
     /// 返値は出力したバイト数
     pub fn encode<T: PModel>(&mut self, pmodel: &T, index: usize) -> u32 {
         // 下限、レンジの更新
-        let mut out = self.range_coder.param_update(
-            pmodel.c_freq(index),
-            pmodel.cum_freq(index),
-            pmodel.total_freq(),
-        );
+        let mut out = self
+            .range_coder
+            .param_update(
+                pmodel.c_freq(index),
+                pmodel.cum_freq(index),
+                pmodel.total_freq(),
+            )
+            .unwrap();
         let len = out.len();
         self.data.append(&mut out);
         len as u32
@@ -35,13 +38,18 @@ impl Encoder {
         }
     }
 }
-/// コンストラクタ
-impl Encoder {
-    pub fn new() -> Self {
+impl Default for Encoder {
+    fn default() -> Self {
         Self {
             data: VecDeque::new(),
             range_coder: RangeCoder::new(),
         }
+    }
+}
+/// コンストラクタ
+impl Encoder {
+    pub fn new() -> Self {
+        Encoder::default()
     }
 }
 /// ゲッタ

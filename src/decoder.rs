@@ -11,16 +11,20 @@ pub struct Decoder {
     // bufferから順に読み出して使う
     data: u64,
 }
-
-/// コンストラクタ,セッター,ゲッター
-impl Decoder {
-    /// コンストラクタ
-    pub fn new() -> Self {
+impl Default for Decoder {
+    fn default() -> Self {
         Self {
             range_coder: RangeCoder::new(),
             buffer: VecDeque::new(),
             data: 0,
         }
+    }
+}
+/// コンストラクタ,セッター,ゲッター
+impl Decoder {
+    /// コンストラクタ
+    pub fn new() -> Self {
+        Decoder::default()
     }
     pub fn set_data(&mut self, data: VecDeque<u8>) {
         self.buffer = data;
@@ -67,6 +71,7 @@ impl Decoder {
                 pmodel.cum_freq(decode_index),
                 pmodel.total_freq(),
             )
+            .unwrap()
             .len();
         self.shift_left_buffer(n);
         decode_index
