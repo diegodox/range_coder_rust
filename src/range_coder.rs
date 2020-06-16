@@ -1,6 +1,9 @@
 //! レンジコーダ(基本ロジック)
 use crate::error::RangeCoderError;
+use env_logger;
+use log::{debug, error, info, warn};
 use std::collections::VecDeque;
+use std::env;
 use std::u64;
 
 /// RangeCoder構造体
@@ -41,6 +44,8 @@ impl RangeCoder {
         let mut out_bytes = VecDeque::new();
         let range_par_total = self.range_par_total(total_freq);
         self.set_range(range_par_total * c_freq as u64);
+        debug!("レンジ更新");
+        debug!("range: {:#018x}", self.range());
         let (lower_bound_new, is_overflow) = self
             .lower_bound()
             .overflowing_add(range_par_total * (cum_freq as u64));
@@ -52,13 +57,21 @@ impl RangeCoder {
             });
         }
         self.set_lower_bound(lower_bound_new);
+        debug!("下限更新");
+        debug!("lowbd: {:#018x}", self.lower_bound());
         const TOP8: u64 = 1 << (64 - 8);
         const TOP16: u64 = 1 << (64 - 16);
         while self.lower_bound() ^ self.upper_bound().unwrap() < TOP8 {
             out_bytes.push_back(self.no_carry_expansion());
+            debug!("通常の桁確定発生");
+            debug!("lowbd: {:#018x}", self.lower_bound());
+            debug!("range: {:#018x}", self.range());
         }
         while self.range() < TOP16 {
             out_bytes.push_back(self.range_reduction_expansion());
+            debug!("けた上がり防止の桁確定発生");
+            debug!("lowbd: {:#018x}", self.lower_bound());
+            debug!("range: {:#018x}", self.range());
         }
         Result::Ok(out_bytes)
     }

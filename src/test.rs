@@ -4,8 +4,16 @@ mod tests {
     use crate::encoder::Encoder;
     use crate::freq_table::FreqTable;
     use crate::pmodel::PModel;
+
+    use env_logger;
+    use log::{debug, error, info, warn};
+    use std::env;
+
     #[test]
     fn test_encode_and_decode() {
+        env::set_var("RUST_LOG", "debug");
+        env_logger::init();
+
         // テストデータを定義
         let test_data = vec![2, 1, 1, 3, 1, 4, 2, 1, 0, 1, 5, 9, 8, 7, 6, 5];
         // アルファベットデータを準備
