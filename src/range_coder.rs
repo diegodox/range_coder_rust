@@ -48,6 +48,7 @@ impl RangeCoder {
             return Result::Err(RangeCoderError::LowerBoundOverflow {
                 lower_bound: self.lower_bound(),
                 add_val: range_par_total * (cum_freq as u64),
+                range: self.range,
             });
         }
         self.set_lower_bound(lower_bound_new);
@@ -98,10 +99,13 @@ impl RangeCoder {
         self.lower_bound
     }
     /// 上限のゲッタ
-    pub fn upper_bound(&self) -> Result<u64, u64> {
+    pub fn upper_bound(&self) -> Result<u64, RangeCoderError> {
         let (v, b) = self.lower_bound().overflowing_add(self.range());
         if b {
-            Err(v)
+            Err(RangeCoderError::UpperBoundOverflow {
+                lower_bound: self.lower_bound(),
+                range: self.range(),
+            })
         } else {
             Ok(v)
         }
