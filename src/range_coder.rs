@@ -124,7 +124,7 @@ impl RangeCoder {
         }
     }
     /// 1出現頻度あたりのレンジを計算
-    pub(crate) fn range_par_total(&self, total_freq: u32) -> u64 {
+    pub fn range_par_total(&self, total_freq: u32) -> u64 {
         self.range() / total_freq as u64
     }
 }
