@@ -1,3 +1,3 @@
 # range_coder_rust
 
- RustでRangeCoder実装
+ This is simple implimention of rangecoder in rust language.
