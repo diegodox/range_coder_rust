@@ -1,3 +1,4 @@
+//! アルファベットの頻度や累積頻度を保持する構造体
 #[derive(Clone, Copy, Debug)]
 /// アルファベットの出現回数を示す構造体
 pub struct AlphabetParam {
@@ -6,13 +7,18 @@ pub struct AlphabetParam {
     /// 文字の出現頻度
     pub(crate) c: u32,
 }
-// コンストラクタをimpl
-impl AlphabetParam {
-    pub fn new() -> Self {
+/// コンストラクタ
+impl Default for AlphabetParam {
+    fn default() -> Self {
         AlphabetParam { cum: 0, c: 0 }
     }
 }
-// ゲッターをimpl
+impl AlphabetParam {
+    pub fn new() -> Self {
+        AlphabetParam::default()
+    }
+}
+/// ゲッター
 impl AlphabetParam {
     pub fn c(&self) -> u32 {
         self.c
@@ -21,7 +27,7 @@ impl AlphabetParam {
         self.cum
     }
 }
-// セッターをimpl
+/// セッター
 impl AlphabetParam {
     pub fn set_c(&mut self, c: u32) {
         self.c = c;
@@ -30,7 +36,7 @@ impl AlphabetParam {
         self.cum = cum;
     }
 }
-// 他の関数をimpl
+/// other
 impl AlphabetParam {
     /// 出現頻度を1回ふやす
     pub(crate) fn add(&mut self) {
