@@ -1,4 +1,4 @@
-![](https://github.com/<OWNER>/<REPOSITORY>/workflows/rust/badge.svg)
+![Test](https://github.com/diegodox/range_coder_rust/workflows/Rust/badge.svg)
 
 # range_coder_rust
 
