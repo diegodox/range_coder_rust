@@ -2,7 +2,7 @@
 
 # range_coder_rust
 
-Simple implimention of rangecoder in rust language.
+Simple implimention of range-coder in rust language.
 Generic over probability models (eg. freq table) by `PModel(trait)`.
 
 ## Installation
