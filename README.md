@@ -1,6 +1,6 @@
 # range_coder_rust
 
-Saimple implimention of rangecoder in rust language.
+Simple implimention of rangecoder in rust language.
 
 ## Installation
 
