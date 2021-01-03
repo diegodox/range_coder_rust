@@ -1,4 +1,4 @@
-![Test](https://github.com/diegodox/range_coder_rust/workflows/Rust/badge.svg)
+![Test](https://github.com/diegodox/range_coder_rust/workflows/Test/badge.svg)
 
 # range_coder_rust
 
