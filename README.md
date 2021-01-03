@@ -1,3 +1,5 @@
+![](https://github.com/<OWNER>/<REPOSITORY>/workflows/rust/badge.svg)
+
 # range_coder_rust
 
 Simple implimention of rangecoder in rust language.
