@@ -50,7 +50,7 @@ impl RangeCoder {
 
     /// レンジ、下限をアルファベットをエンコードしたときのものにする
     ///
-    /// 返値は
+    /// 返値は確定させた符号
     pub(crate) fn param_update(
         &mut self,
         c_freq: u32,
@@ -80,11 +80,16 @@ impl RangeCoder {
         };
 
         // 通常の桁確定
+        //
+        // 上位8bitは変動しない -> 左シフトで拡大してよい
         while self.lower_bound ^ self.upper_bound().unwrap() < TOP8 {
             out_bytes.push_back(self.no_carry_expansion());
         }
 
         // 桁上がり防止の桁確定
+        //
+        // レンジが不足することを防ぐために，一定よりレンジが小さくなったら
+        // 上位16ビットは確定したとみなして，左シフトで拡大する
         while self.range < TOP16 {
             out_bytes.push_back(self.range_reduction_expansion());
         }

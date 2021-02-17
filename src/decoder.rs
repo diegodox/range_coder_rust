@@ -48,6 +48,7 @@ impl Decoder {
             )
             .unwrap()
             .len();
+        // デコーダ内部のdataを内部のレンジコーダと同期する
         self.shift_left_buffer(n);
         decode_index
     }
