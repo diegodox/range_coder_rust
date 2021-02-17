@@ -5,17 +5,17 @@ use std::collections::VecDeque;
 /// デコーダ構造体
 pub struct Decoder {
     range_coder: RangeCoder,
-    // 符号のうち，未使用のものをバッファしておく
-    buffer: VecDeque<u8>,
-    // 符号のうち，レンジコーダの下限と同じ位置のビット列
+    // レンジコーダの下限と同じ位置の符号
     data: u64,
+    // data以降の符号のバッファ
+    buffer: VecDeque<u8>,
 }
 impl Decoder {
     pub fn new<I: Into<VecDeque<u8>>>(code: I) -> Self {
         let mut decoder = Self {
             range_coder: RangeCoder::new(),
-            buffer: code.into(),
             data: 0,
+            buffer: code.into(),
         };
         // 最初の64bit読み出し
         decoder.shift_left_buffer(8);

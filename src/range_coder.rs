@@ -3,9 +3,6 @@ use crate::error::RangeCoderError;
 use std::collections::VecDeque;
 use std::u64;
 
-const TOP8: u64 = 1 << (64 - 8);
-const TOP16: u64 = 1 << (64 - 16);
-
 /// RangeCoder構造体
 pub struct RangeCoder {
     /// 下限
@@ -21,9 +18,11 @@ impl Default for RangeCoder {
         }
     }
 }
-/// コンストラクタ
+
 impl RangeCoder {
-    /// コンストラクタ
+    const TOP8: u64 = 1 << (64 - 8);
+    const TOP16: u64 = 1 << (64 - 16);
+
     pub fn new() -> Self {
         RangeCoder::default()
     }
@@ -57,6 +56,8 @@ impl RangeCoder {
         cum_freq: u32,
         total_freq: u32,
     ) -> Result<VecDeque<u8>, RangeCoderError> {
+        // linkedlist のほうが適切かも? (符号は常に先頭から末尾へ読まれる．確定した符号を繋げる必要がある)
+        // または普通にVecで十分では?
         let mut out_bytes = VecDeque::new();
         let range_par_total = self.range_par_total(total_freq);
 
@@ -79,19 +80,12 @@ impl RangeCoder {
             }
         };
 
-        // 通常の桁確定
-        //
-        // 上位8bitは変動しない -> 左シフトで拡大してよい
-        while self.lower_bound ^ self.upper_bound().unwrap() < TOP8 {
-            out_bytes.push_back(self.no_carry_expansion());
+        while let Some(byte) = self.no_carry_expansion() {
+            out_bytes.push_back(byte);
         }
 
-        // 桁上がり防止の桁確定
-        //
-        // レンジが不足することを防ぐために，一定よりレンジが小さくなったら
-        // 上位16ビットは確定したとみなして，左シフトで拡大する
-        while self.range < TOP16 {
-            out_bytes.push_back(self.range_reduction_expansion());
+        while let Some(byte) = self.range_reduction_expansion() {
+            out_bytes.push_back(byte);
         }
 
         Ok(out_bytes)
@@ -105,28 +99,39 @@ impl RangeCoder {
         tmp
     }
 
-    /// 桁確定1
+    // 通常の桁確定
+    //
+    /// オーバーフローしない時の桁確定
+    /// 確定した符号にあたる下限の上位8bitを返す
     ///
-    /// オーバーフローしない時の、桁確定
-    /// 上位8bitを返す
+    // 上位8bitは変動しない -> 左シフトで拡大してよい
     ///
-    /// この関数では判定はせず、動作のみ
-    /// 条件は`lower_bound^upper_bound < 1<<(64-8)`
-    fn no_carry_expansion(&mut self) -> u8 {
-        self.left_shift()
+    /// 条件は `lower_bound^upper_bound(確定した部分は0が続く) < 1<<(64-8)`
+    fn no_carry_expansion(&mut self) -> Option<u8> {
+        if self.lower_bound ^ self.upper_bound().unwrap() < Self::TOP8 {
+            Some(self.left_shift())
+        } else {
+            None
+        }
     }
 
-    /// 桁確定2
+    /// レンジが小さくなった時の桁確定
     ///
-    /// レンジが小さくなった時の、桁確定
-    /// 上位8bitを返す
+    /// レンジが不足することを防ぐために，一定よりレンジが小さくなったら
+    /// 上位16ビットを強制的に確定させて(?)，左シフトで拡大する
     ///
-    /// この関数では判定はせず、動作のみ
-    /// 条件は`range < 1<<(64-16)`
-    fn range_reduction_expansion(&mut self) -> u8 {
-        let range_new = !self.lower_bound & ((1 << (64 - 16)) - 1);
-        self.set_range(range_new);
-        self.left_shift()
+    /// 確定した符号にあたる下限の上位8bitを返す
+    ///
+    /// 条件は `range < 1<<(64-16)`
+    fn range_reduction_expansion(&mut self) -> Option<u8> {
+        if self.range < Self::TOP16 {
+            // 新しい `range` として `upperbound` を下位 (64-16) bit 全部 `1` にするようなやつを使う
+            let range_new = !self.lower_bound & (Self::TOP16 - 1);
+            self.set_range(range_new);
+            Some(self.left_shift())
+        } else {
+            None
+        }
     }
 
     /// calc upper-bound

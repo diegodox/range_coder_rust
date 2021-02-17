@@ -23,7 +23,7 @@ impl Encoder {
     /// 返値は出力したバイト数
     pub fn encode<T: PModel>(&mut self, pmodel: &T, index: usize) -> u32 {
         // 下限、レンジの更新
-        let mut out = self
+        let mut outbytes = self
             .range_coder
             .param_update(
                 pmodel.c_freq(index),
@@ -31,8 +31,8 @@ impl Encoder {
                 pmodel.total_freq(),
             )
             .unwrap();
-        let len = out.len();
-        self.code.append(&mut out);
+        let len = outbytes.len();
+        self.code.append(&mut outbytes);
         len as u32
     }
     /// エンコード終了処理

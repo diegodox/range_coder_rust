@@ -8,7 +8,7 @@ pub trait PModel {
     fn cum_freq(&self, index: usize) -> u32;
     /// 合計累積頻度を返す
     fn total_freq(&self) -> u32;
-    /// PModelとレンジコーダからインデックスを返す
+    /// PModelとデコーダを使って，デコードするインデックスを見つける
     fn find_index(&self, decoder: &Decoder) -> usize;
     /// 理想符号長を返す
     fn ideal_code_length(&self, index: usize) -> Result<f64, String> {
