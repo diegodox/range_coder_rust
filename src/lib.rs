@@ -1,5 +1,5 @@
 mod range_coder;
-pub use range_coder::RangeCoder;
+pub use crate::range_coder::RangeCoder;
 
 mod encoder;
 pub use encoder::Encoder;
