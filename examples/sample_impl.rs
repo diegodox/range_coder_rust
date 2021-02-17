@@ -1,5 +1,4 @@
-use range_coder::{decoder::Decoder, encoder::Encoder, pmodel::PModel};
-
+use range_coder::{Decoder, Encoder, PModel};
 #[derive(Clone, Copy, Debug)]
 /// アルファベットの出現回数を示す構造体
 struct AlphabetParam {
@@ -26,10 +25,13 @@ impl PModel for FreqTable {
         self.total_freq
     }
     fn find_index(&self, decoder: &Decoder) -> usize {
-        let mut left = 0;
-        let mut right = self.alphabet_count() - 1;
+        // 符号に対応するcum
         let rfreq = (decoder.data() - decoder.range_coder().lower_bound())
             / decoder.range_coder().range_par_total(self.total_freq());
+
+        // 2分探索で `rfreq` を探す
+        let mut left = 0;
+        let mut right = self.alphabet_count() - 1;
         while left < right {
             let mid = (left + right) / 2;
             let mid_cum = self.cum_freq(mid + 1);
